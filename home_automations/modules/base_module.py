@@ -25,6 +25,12 @@ class BaseModule(ClockEvents, ABC):
         if event.data["entity_id"] not in self.state_changed_events:
             return
 
+        if "old_state" not in event.data or "new_state" not in event.data:
+            return
+
+        if event.data["old_state"] is None or event.data["new_state"] is None:
+            return
+
         old_state = State(**event.data["old_state"])
         new_state = State(**event.data["new_state"])
 
