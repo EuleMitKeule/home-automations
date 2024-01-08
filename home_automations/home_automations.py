@@ -8,6 +8,7 @@ from hass_client.exceptions import (
     CannotConnect,
     ConnectionFailed,
     NotConnected,
+    NotFoundError,
 )
 from hass_client.models import Event
 
@@ -51,6 +52,8 @@ class HomeAutomations:
             except AuthenticationFailed:
                 logging.error("Authentication failed")
                 break
+            except NotFoundError as e:
+                logging.error(e)
 
     async def on_event(self, event: Event):
         """Handle an event from Home Assistant."""
