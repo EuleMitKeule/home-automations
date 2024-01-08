@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "home-automations"
+version = "0.0.0"
+description = "My custom home automation software written in Python."
+authors = ["Lennard Beers <l.beers@outlook.de>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "home_automations" },
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+home-automations = "home_automations.__main__:start"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+dataclass-wizard = "^0.22.2"
+python-dotenv = "^1.0.0"
+dependency-injector = "^4.41.0"
+pyyaml = "^6.0.1"
+marshmallow-dataclass = "^8.6.0"
+pytz = "^2023.3.post1"
+python-hass-client = {git = "https://github.com/EuleMitKeule/python-hass-client", rev = "master"}
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.12.1"
+ruff = "^0.1.11"
+mypy = "^1.8.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.4"
+
+[tool.ruff]
+unfixable = ["F401"]
