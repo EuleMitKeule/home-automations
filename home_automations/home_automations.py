@@ -17,6 +17,7 @@ from home_automations.models.config import Config
 from home_automations.models.exceptions import NotFoundAgainError
 from home_automations.modules.base_module import BaseModule
 from home_automations.modules.thermostat_module import ThermostatModule
+from home_automations.modules.tibber_module import TibberModule
 
 
 class HomeAutomations:
@@ -35,6 +36,7 @@ class HomeAutomations:
             ThermostatModule(config, client, thermostat_config)
             for thermostat_config in config.thermostats
         ]
+        self.modules += [TibberModule(config, client)]
         self.loop = asyncio.get_running_loop()
 
     async def run(self):

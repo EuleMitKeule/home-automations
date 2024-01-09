@@ -30,3 +30,5 @@ class Logger(ABC):
                 logging.StreamHandler(sys.stdout),
             ],
         )
+
+        logging.getLogger("apscheduler.executors.default").propagate = False

@@ -25,6 +25,9 @@ pyyaml = "^6.0.1"
 marshmallow-dataclass = "^8.6.0"
 pytz = "^2023.3.post1"
 python-hass-client = {git = "https://github.com/EuleMitKeule/python-hass-client", rev = "master"}
+apscheduler = "^3.10.4"
+pytibber = "^0.28.2"
+colour = "^0.1.5"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"

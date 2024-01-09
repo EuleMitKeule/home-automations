@@ -10,6 +10,7 @@ from dataclass_wizard import YAMLWizard
 from home_automations.models.homeassistant_config import HomeAssistantConfig
 from home_automations.models.logging_config import LoggingConfig
 from home_automations.models.thermostat_config import ThermostatConfig
+from home_automations.models.tibber_config import TibberConfig
 
 
 @dataclass
@@ -21,6 +22,7 @@ class Config(YAMLWizard):
     homeassistant: HomeAssistantConfig
     thermostats: list[ThermostatConfig] = field(default_factory=list)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+    tibber: TibberConfig = field(default_factory=TibberConfig)
 
     @classmethod
     def load(cls, file_path: Path) -> Optional["Config"]:

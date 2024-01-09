@@ -1,5 +1,5 @@
 import logging
-from enum import Enum
+from enum import Enum, StrEnum
 
 ENV_CONFIG_FILE_PATH = "CONFIG_FILE_PATH"
 DEFAULT_CONFIG_FILE_PATH = "config.yml"
@@ -23,3 +23,23 @@ class ThermostatState(str, Enum):
     HEAT = "heat"
     AUTO = "auto"
     UNAVAILABLE = "unavailable"
+
+
+class TibberLevel(StrEnum):
+    VERY_EXPENSIVE = "VERY_EXPENSIVE"
+    EXPENSIVE = "EXPENSIVE"
+    NORMAL = "NORMAL"
+    CHEAP = "CHEAP"
+    VERY_CHEAP = "VERY_CHEAP"
+    FREE = "FREE"
+    UNKNOWN = "UNKNOWN"
+
+    @classmethod
+    def _missing_(cls, value):
+        value = value.lower()
+        for member in cls:
+            if member.lower() == value:
+                return member
+            if member.upper() == value:
+                return member
+        return None
