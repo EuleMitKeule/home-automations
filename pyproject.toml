@@ -25,7 +25,6 @@ pyyaml = "^6.0.1"
 marshmallow-dataclass = "^8.6.0"
 pytz = "^2023.3.post1"
 python-hass-client = {git = "https://github.com/EuleMitKeule/python-hass-client", rev = "master"}
-homeassistant = "^2024.1.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
