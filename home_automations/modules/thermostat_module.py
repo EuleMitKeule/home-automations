@@ -62,6 +62,12 @@ class ThermostatModule(BaseModule):
         return True
 
     @property
+    async def has_scheduled_temp(self) -> bool:
+        """Return whether the thermostat has a scheduled temperature."""
+
+        return await self.temp_difference <= 0.25
+
+    @property
     async def should_set_temp(self) -> bool:
         """Return whether the thermostat should be set."""
 
@@ -69,16 +75,10 @@ class ThermostatModule(BaseModule):
             return False
 
         has_target_temp = await self.target_temp == await self.current_temp_climate
-        has_scheduled_temp = await self.temp_difference <= 0.25
         is_target_off = await self.target_state == ThermostatState.OFF
         is_unavailable = await self.current_state == ThermostatState.UNAVAILABLE
 
-        if (
-            not has_target_temp
-            and not has_scheduled_temp
-            and not is_target_off
-            and not is_unavailable
-        ):
+        if not has_target_temp and not is_target_off and not is_unavailable:
             return True
 
         return False
@@ -107,6 +107,9 @@ class ThermostatModule(BaseModule):
     @property
     async def target_temp(self) -> float | None:
         """Return the target temperature for the current time."""
+
+        if await self.has_scheduled_temp:
+            return await self.scheduled_temp
 
         if await self.scheduled_temp > await self.current_temp:
             return self.thermostat_config.max_target_temp
