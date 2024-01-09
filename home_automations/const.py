@@ -14,6 +14,9 @@ DEFAULT_LOGGING_FILEMODE = "a"
 
 DEFAULT_TZ = "Europe/Berlin"
 
+DEFAULT_MAX_TARGET_TEMP = 29.5
+DEFAULT_MIN_TARGET_TEMP = 4.5
+
 
 class ThermostatState(str, Enum):
     OFF = "off"

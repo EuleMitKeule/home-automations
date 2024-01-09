@@ -6,6 +6,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from home_automations.const import DEFAULT_CONFIG_FILE_PATH, ENV_CONFIG_FILE_PATH
+from home_automations.helper.client import Client
+from home_automations.helper.clock import Clock
+from home_automations.helper.logger import Logger
 from home_automations.home_automations import HomeAutomations
 from home_automations.models.config import Config
 
@@ -19,6 +22,10 @@ async def main():
 
     config = Config.load(config_file_path)
 
+    await Logger.init(config)
+    await Clock.init(config)
+    client = Client(config)
+
     if config is None:
         asyncio.get_event_loop().stop()
         return
@@ -27,7 +34,7 @@ async def main():
     logging.info(f"Config file path: {config_file_path}")
     logging.info(f"Log file path: {config.logging.path}")
 
-    home_automations = HomeAutomations(config)
+    home_automations = HomeAutomations(config, client)
     await home_automations.run()
 
 

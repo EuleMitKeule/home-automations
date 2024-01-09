@@ -1,19 +1,19 @@
 from abc import ABC
 
-from hass_client import HomeAssistantClient
 from hass_client.models import Event, State
 
+from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
 from home_automations.helper.clock_events import ClockEvents
 from home_automations.models.config import Config
 
 
 class BaseModule(ClockEvents, ABC):
-    hass_client: HomeAssistantClient
+    client: Client
     state_changed_events: dict[str, list[callable]] = {}
 
-    def __init__(self, hass_client: HomeAssistantClient, config: Config):
-        self.hass_client = hass_client
+    def __init__(self, config: Config, client: Client):
+        self.client = client
         self.config = config
 
         Clock.register_module(self)

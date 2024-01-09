@@ -17,7 +17,7 @@ build-backend = "poetry.core.masonry.api"
 home-automations = "home_automations.__main__:start"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.13"
 dataclass-wizard = "^0.22.2"
 python-dotenv = "^1.0.0"
 dependency-injector = "^4.41.0"
@@ -25,6 +25,7 @@ pyyaml = "^6.0.1"
 marshmallow-dataclass = "^8.6.0"
 pytz = "^2023.3.post1"
 python-hass-client = {git = "https://github.com/EuleMitKeule/python-hass-client", rev = "master"}
+homeassistant = "^2024.1.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"

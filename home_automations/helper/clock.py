@@ -8,6 +8,7 @@ from pytz.tzinfo import BaseTzInfo
 
 from home_automations.const import DEFAULT_TZ
 from home_automations.helper.clock_events import ClockEvents
+from home_automations.models.config import Config
 
 
 class Clock(ABC):
@@ -49,11 +50,8 @@ class Clock(ABC):
             await asyncio.sleep(0.25)
 
     @classmethod
-    def set_timezone(cls, tz: str | BaseTzInfo):
-        if isinstance(tz, str):
-            tz = pytz.timezone(tz)
-
-        Clock.tz = tz
+    async def init(cls, config: Config):
+        Clock.tz = pytz.timezone(config.timezone)
 
     @classmethod
     @property

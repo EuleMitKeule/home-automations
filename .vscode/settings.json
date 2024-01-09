@@ -6,5 +6,6 @@
     "python.testing.pytestEnabled": true,
     "yaml.schemas": {
         "https://json.schemastore.org/yamllint.json": "file:///home/eule/projects/home-automations/tests/config.test.yml"
-    }
+    },
+    "python.REPL.enableREPLSmartSend": false
 }
