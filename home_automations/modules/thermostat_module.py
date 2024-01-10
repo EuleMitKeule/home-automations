@@ -180,16 +180,16 @@ class ThermostatModule(BaseModule):
         if not await self.should_set_temp:
             return
 
-        logging.info(
-            f"Setting {self.thermostat_config.entity_id} to {await self.target_temp}."
-        )
-
         await self.client.call_service(
             "climate",
             "set_temperature",
             service_data={"temperature": await self.target_temp},
             target={"entity_id": self.thermostat_config.entity_id},
             timeout=datetime.timedelta(minutes=2),
+        )
+
+        logging.info(
+            f"Setting {self.thermostat_config.entity_id} to {await self.target_temp}."
         )
 
         self.last_target_temp = await self.target_temp

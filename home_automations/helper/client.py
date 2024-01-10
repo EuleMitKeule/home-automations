@@ -15,7 +15,7 @@ from hass_client.exceptions import (
 from hass_client.models import State
 
 from home_automations.models.config import Config
-from home_automations.models.exceptions import NotFoundAgainError
+from home_automations.models.exceptions import NotFoundAgainError, ServiceTimeoutError
 
 
 class Client:
@@ -31,31 +31,39 @@ class Client:
     async def with_client(self, func: callable):
         """Run a function with the hass_client."""
 
-        async with aiohttp.ClientSession() as session:
-            client = HomeAssistantClient(
-                self.config.homeassistant.url,
-                self.config.homeassistant.token,
-                aiohttp_session=session,
-            )
+        try:
+            async with aiohttp.ClientSession() as session:
+                client = HomeAssistantClient(
+                    self.config.homeassistant.url,
+                    self.config.homeassistant.token,
+                    aiohttp_session=session,
+                )
 
-            while not client.connected:
+                while not client.connected:
+                    try:
+                        await client.connect()
+                    except (
+                        NotConnected,
+                        CannotConnect,
+                        ConnectionFailed,
+                        RuntimeError,
+                    ):
+                        logging.error(
+                            "Not connected to Home Assistant, retrying in 5 seconds"
+                        )
+                        await asyncio.sleep(5)
+                    except AuthenticationFailed:
+                        logging.error("Authentication failed")
+                        break
+
                 try:
-                    await client.connect()
-                except (NotConnected, CannotConnect, ConnectionFailed):
-                    logging.error(
-                        "Not connected to Home Assistant, retrying in 5 seconds"
-                    )
-                    await asyncio.sleep(5)
-                except AuthenticationFailed:
-                    logging.error("Authentication failed")
-                    break
+                    result = await func(client)
+                finally:
+                    await client.disconnect()
 
-            try:
-                result = await func(client)
-            finally:
-                await client.disconnect()
-
-            return result
+                return result
+        except RuntimeError:
+            pass
 
     async def subscribe_events(self, on_event_callback: callable):
         """Subscribe to events."""
@@ -118,7 +126,9 @@ class Client:
 
         if arg_hash in self.called_services:
             if self.called_services[arg_hash] > datetime.datetime.now():
-                return
+                raise ServiceTimeoutError(
+                    f"Service {domain}.{service} was called too recently"
+                )
 
             del self.called_services[arg_hash]
 

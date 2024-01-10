@@ -1,4 +1,3 @@
-import colorsys
 import logging
 
 from colour import Color

@@ -70,3 +70,6 @@ class HomeAutomations:
 
             if event.event_type == "state_changed":
                 await module.on_state_changed(event)
+
+            if event.event_type == "zha_event":
+                await module.on_zha_event(event)

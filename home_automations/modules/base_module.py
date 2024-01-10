@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Any
 
 from hass_client.models import Event, State
 
@@ -11,12 +12,29 @@ from home_automations.models.config import Config
 class BaseModule(ClockEvents, ABC):
     client: Client
     state_changed_events: dict[str, list[callable]] = {}
+    zha_events: dict[str, list[callable]] = {}
 
     def __init__(self, config: Config, client: Client):
         self.client = client
         self.config = config
 
         Clock.register_module(self)
+
+    def _register_event_callback(
+        self, key: Any, method_callable: callable, event_dict: dict[Any, list[callable]]
+    ):
+        if key not in event_dict:
+            event_dict[key] = []
+
+        event_dict[key].append(method_callable)
+
+    def _get_event_callbacks(
+        self, key: Any, event_dict: dict[Any, list[callable]]
+    ) -> list[callable]:
+        if key not in event_dict:
+            return []
+
+        return event_dict[key]
 
     async def on_event(self, event: Event):
         pass
@@ -37,8 +55,13 @@ class BaseModule(ClockEvents, ABC):
         for method_callable in self.state_changed_events[event.data["entity_id"]]:
             await method_callable(event, old_state, new_state)
 
-    def register_state_changed(self, method_callable: callable, entity_id: str):
-        if entity_id not in self.state_changed_events:
-            self.state_changed_events[entity_id] = []
+    async def on_zha_event(self, event: Event):
+        pass
 
-        self.state_changed_events[entity_id].append(method_callable)
+    def register_state_changed(self, method_callable: callable, entity_id: str):
+        self._register_event_callback(
+            entity_id, method_callable, self.state_changed_events
+        )
+
+    def register_zha_event(self, method_callable: callable, device_ieee: str):
+        self._register_event_callback(device_ieee, method_callable, self.zha_events)
