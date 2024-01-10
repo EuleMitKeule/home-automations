@@ -3,10 +3,6 @@ import logging
 
 from dependency_injector.wiring import inject
 from hass_client.exceptions import (
-    AuthenticationFailed,
-    CannotConnect,
-    ConnectionFailed,
-    NotConnected,
     NotFoundError,
 )
 from hass_client.models import Event
@@ -14,7 +10,7 @@ from hass_client.models import Event
 from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
 from home_automations.models.config import Config
-from home_automations.models.exceptions import NotFoundAgainError
+from home_automations.models.exceptions import NotFoundAgainError, ServiceTimeoutError
 from home_automations.modules.base_module import BaseModule
 from home_automations.modules.thermostat_module import ThermostatModule
 from home_automations.modules.tibber_module import TibberModule
@@ -41,26 +37,16 @@ class HomeAutomations:
 
     async def run(self):
         """Run the HomeAutomations class."""
-
         while True:
             try:
-                try:
-                    await self.client.subscribe_events(self.on_event)
-                except (NotConnected, CannotConnect, ConnectionFailed):
-                    logging.error(
-                        "Not connected to Home Assistant, retrying in 5 seconds"
-                    )
-                    await asyncio.sleep(5)
-                    continue
-                except AuthenticationFailed:
-                    logging.error("Authentication failed")
-                    break
                 await Clock.run()
-                await asyncio.sleep(0.25)
+                await self.client.subscribe_events(self.on_event)
             except NotFoundError as e:
                 logging.error(e)
             except NotFoundAgainError:
                 pass
+            except ServiceTimeoutError as e:
+                logging.warning(e)
 
     async def on_event(self, event: Event):
         """Handle an event from Home Assistant."""

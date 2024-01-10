@@ -24,7 +24,9 @@ class TibberModule(BaseModule):
             user_agent="Home Automations",
         )
 
-        scheduler.add_job(self.on_update, "interval", minutes=2)
+        scheduler.add_job(
+            self.on_update, "interval", seconds=self.config.tibber.update_interval
+        )
 
     async def on_update(self):
         try:

@@ -27,7 +27,6 @@ async def main():
 
     await Logger.init(config)
     await Clock.init(config)
-    client = Client(config)
 
     if config is None:
         asyncio.get_event_loop().stop()
@@ -37,8 +36,9 @@ async def main():
     logging.info(f"Config file path: {config_file_path}")
     logging.info(f"Log file path: {config.logging.path}")
 
-    home_automations = HomeAutomations(config, client)
-    await home_automations.run()
+    async with Client(config) as client:
+        home_automations = HomeAutomations(config, client)
+        await home_automations.run()
 
 
 def start():

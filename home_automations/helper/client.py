@@ -20,6 +20,8 @@ from home_automations.models.exceptions import NotFoundAgainError, ServiceTimeou
 
 class Client:
     config: Config
+    session: aiohttp.ClientSession
+    client: HomeAssistantClient
     unknown_entities: set[str] = set()
     called_services: dict[int, datetime.datetime] = {}
 
@@ -28,42 +30,46 @@ class Client:
 
         self.config = config
 
+    async def __aenter__(self):
+        """Enter the Client class."""
+
+        self.session = aiohttp.ClientSession()
+        self.client = HomeAssistantClient(
+            self.config.homeassistant.url,
+            self.config.homeassistant.token,
+            aiohttp_session=self.session,
+        )
+
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        """Exit the Client class."""
+
+        logging.info("Disconnecting from Home Assistant")
+
+        await self.client.disconnect()
+        await self.session.close()
+
+        return False
+
     async def with_client(self, func: callable):
         """Run a function with the hass_client."""
 
-        try:
-            async with aiohttp.ClientSession() as session:
-                client = HomeAssistantClient(
-                    self.config.homeassistant.url,
-                    self.config.homeassistant.token,
-                    aiohttp_session=session,
-                )
+        while not self.client.connected:
+            try:
+                await self.client.connect()
+            except (
+                NotConnected,
+                CannotConnect,
+                ConnectionFailed,
+            ):
+                logging.error("Not connected to Home Assistant, retrying in 5 seconds")
+                await asyncio.sleep(5)
+            except AuthenticationFailed:
+                logging.error("Authentication failed")
+                break
 
-                while not client.connected:
-                    try:
-                        await client.connect()
-                    except (
-                        NotConnected,
-                        CannotConnect,
-                        ConnectionFailed,
-                        RuntimeError,
-                    ):
-                        logging.error(
-                            "Not connected to Home Assistant, retrying in 5 seconds"
-                        )
-                        await asyncio.sleep(5)
-                    except AuthenticationFailed:
-                        logging.error("Authentication failed")
-                        break
-
-                try:
-                    result = await func(client)
-                finally:
-                    await client.disconnect()
-
-                return result
-        except RuntimeError:
-            pass
+        return await func(self.client)
 
     async def subscribe_events(self, on_event_callback: callable):
         """Subscribe to events."""
@@ -77,7 +83,9 @@ class Client:
     ):
         """Subscribe to events."""
 
-        await client.subscribe_events(on_event_callback)
+        while True:
+            await client.subscribe_events(on_event_callback)
+            await asyncio.sleep(2)
 
     async def get_state(self, entity_id: str) -> State:
         """Return the state of an entity."""
