@@ -108,7 +108,7 @@ class ThermostatModule(BaseModule):
         if current_temp is None or scheduled_temp is None:
             return None
 
-        return abs(scheduled_temp - await current_temp)
+        return abs(scheduled_temp - current_temp)
 
     @property
     async def scheduled_temp(self) -> float | None:

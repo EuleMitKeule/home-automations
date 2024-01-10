@@ -44,22 +44,24 @@ class HomeAutomations:
             try:
                 await Clock.run()
                 await self.client.subscribe_events(self.on_event)
+                await asyncio.sleep(2)
             except NotFoundError as e:
                 logging.error(e)
             except NotFoundAgainError:
                 pass
             except ServiceTimeoutError as e:
                 logging.debug(e)
-            except asyncio.CancelledError:
-                pass
+            except asyncio.CancelledError as e:
+                logging.exception(e)
             except (
                 NotConnected,
                 CannotConnect,
                 ConnectionFailed,
             ):
                 await self.client.connect()
-            except Exception:
-                pass
+            except Exception as e:
+                # print error with traceback
+                logging.exception(e)
 
     async def on_event(self, event: Event):
         """Handle an event from Home Assistant."""
