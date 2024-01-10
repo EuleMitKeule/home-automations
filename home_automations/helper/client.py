@@ -50,6 +50,9 @@ class Client:
     async def get_state(self, entity_id: str) -> str:
         """Return the state of an entity."""
 
+        if not self.hass_client.connected:
+            await self.connect()
+
         try:
             state = await self.hass_client.get_state(entity_id)
         except NotFoundError:
@@ -62,5 +65,8 @@ class Client:
 
     async def call_service(self, domain: str, service: str, **kwargs):
         """Call a service."""
+
+        if not self.hass_client.connected:
+            await self.connect()
 
         await self.hass_client.call_service(domain, service, **kwargs)
