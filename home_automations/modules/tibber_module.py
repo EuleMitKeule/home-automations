@@ -1,5 +1,6 @@
 import logging
 
+from aiohttp import ClientConnectorError
 from colour import Color
 from tibber import FatalHttpException, Tibber
 
@@ -67,5 +68,5 @@ class TibberModule(BaseModule):
                 )
 
             self.last_level = level
-        except FatalHttpException as e:
+        except (ClientConnectorError, FatalHttpException) as e:
             logging.error(e)

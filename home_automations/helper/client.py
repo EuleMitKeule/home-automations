@@ -30,34 +30,18 @@ class Client:
 
         self.config = config
 
-    async def __aenter__(self):
+    async def connect(self):
         """Enter the Client class."""
 
-        self.session = aiohttp.ClientSession()
         self.client = HomeAssistantClient(
             self.config.homeassistant.url,
             self.config.homeassistant.token,
-            aiohttp_session=self.session,
         )
-
-        return self
-
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        """Exit the Client class."""
-
-        logging.info("Disconnecting from Home Assistant")
-
-        await self.client.disconnect()
-        await self.session.close()
-
-        return False
-
-    async def with_client(self, func: callable):
-        """Run a function with the hass_client."""
 
         while not self.client.connected:
             try:
                 await self.client.connect()
+                logging.info("Connected to Home Assistant")
             except (
                 NotConnected,
                 CannotConnect,
@@ -69,34 +53,18 @@ class Client:
                 logging.error("Authentication failed")
                 break
 
-        return await func(self.client)
-
     async def subscribe_events(self, on_event_callback: callable):
         """Subscribe to events."""
 
-        await self.with_client(
-            lambda client: self._subscribe_events(client, on_event_callback)
-        )
-
-    async def _subscribe_events(
-        self, client: HomeAssistantClient, on_event_callback: callable
-    ):
-        """Subscribe to events."""
-
         while True:
-            await client.subscribe_events(on_event_callback)
+            await self.client.subscribe_events(on_event_callback)
             await asyncio.sleep(2)
 
     async def get_state(self, entity_id: str) -> State:
         """Return the state of an entity."""
 
-        return await self.with_client(lambda client: self._get_state(client, entity_id))
-
-    async def _get_state(self, client: HomeAssistantClient, entity_id: str) -> State:
-        """Return the state of an entity."""
-
         try:
-            state = await client.get_state(entity_id)
+            state = await self.client.get_state(entity_id)
         except NotFoundError:
             if entity_id not in self.unknown_entities:
                 self.unknown_entities.add(entity_id)
@@ -105,16 +73,8 @@ class Client:
 
         return state
 
-    async def call_service(self, domain: str, service: str, **kwargs):
-        """Call a service."""
-
-        await self.with_client(
-            lambda client: self._call_service(client, domain, service, **kwargs)
-        )
-
-    async def _call_service(
+    async def call_service(
         self,
-        client: HomeAssistantClient,
         domain: str,
         service: str,
         service_data: dict[str, Any] | None = None,
@@ -140,7 +100,7 @@ class Client:
 
             del self.called_services[arg_hash]
 
-        await client.call_service(domain, service, service_data, target)
+        await self.client.call_service(domain, service, service_data, target)
 
         if timeout is not None:
             self.called_services[arg_hash] = datetime.datetime.now() + timeout

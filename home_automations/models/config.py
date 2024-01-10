@@ -7,6 +7,7 @@ import marshmallow_dataclass
 import yaml
 from dataclass_wizard import YAMLWizard
 
+from home_automations.models.dimmer_config import DimmerConfig
 from home_automations.models.homeassistant_config import HomeAssistantConfig
 from home_automations.models.logging_config import LoggingConfig
 from home_automations.models.thermostat_config import ThermostatConfig
@@ -23,6 +24,7 @@ class Config(YAMLWizard):
     thermostats: list[ThermostatConfig] = field(default_factory=list)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     tibber: TibberConfig = field(default_factory=TibberConfig)
+    dimmer_configs: list[DimmerConfig] = field(default_factory=list)
 
     @classmethod
     def load(cls, file_path: Path) -> Optional["Config"]:

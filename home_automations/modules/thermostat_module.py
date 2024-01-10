@@ -66,6 +66,11 @@ class ThermostatModule(BaseModule):
     async def has_scheduled_temp(self) -> bool:
         """Return whether the thermostat has a scheduled temperature."""
 
+        temp_difference = await self.temp_difference
+
+        if temp_difference is None:
+            return False
+
         return await self.temp_difference <= 0.25
 
     @property
@@ -97,7 +102,13 @@ class ThermostatModule(BaseModule):
     async def temp_difference(self) -> float | None:
         """Return the difference between the current and target temperature."""
 
-        return abs(await self.scheduled_temp - await self.current_temp)
+        current_temp = await self.current_temp
+        scheduled_temp = await self.scheduled_temp
+
+        if current_temp is None or scheduled_temp is None:
+            return None
+
+        return abs(scheduled_temp - await current_temp)
 
     @property
     async def scheduled_temp(self) -> float | None:
@@ -108,6 +119,9 @@ class ThermostatModule(BaseModule):
     @property
     async def target_temp(self) -> float | None:
         """Return the target temperature for the current time."""
+
+        if await self.scheduled_temp is None or await self.current_temp is None:
+            return None
 
         if await self.has_scheduled_temp:
             return await self.scheduled_temp
@@ -128,6 +142,9 @@ class ThermostatModule(BaseModule):
     @property
     async def current_temp_sensor(self) -> float | None:
         state = await self.client.get_state(self.thermostat_config.temperature_sensor)
+
+        if not isinstance(state.state, str):
+            return None
 
         return float(state.state)
 
@@ -178,6 +195,12 @@ class ThermostatModule(BaseModule):
         """Apply the target temperature."""
 
         if not await self.should_set_temp:
+            return
+
+        if await self.target_temp is None:
+            logging.warning(
+                f"Could not determine target temperature for thermostat {self.thermostat_config.name}"
+            )
             return
 
         await self.client.call_service(

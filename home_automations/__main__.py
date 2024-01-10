@@ -36,9 +36,13 @@ async def main():
     logging.info(f"Config file path: {config_file_path}")
     logging.info(f"Log file path: {config.logging.path}")
 
-    async with Client(config) as client:
-        home_automations = HomeAutomations(config, client)
-        await home_automations.run()
+    client = Client(config)
+    await client.connect()
+
+    home_automations = HomeAutomations(config, client)
+    await home_automations.run()
+
+    logging.info("Stopping Home Automations")
 
 
 def start():

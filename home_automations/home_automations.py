@@ -3,6 +3,9 @@ import logging
 
 from dependency_injector.wiring import inject
 from hass_client.exceptions import (
+    CannotConnect,
+    ConnectionFailed,
+    NotConnected,
     NotFoundError,
 )
 from hass_client.models import Event
@@ -46,7 +49,17 @@ class HomeAutomations:
             except NotFoundAgainError:
                 pass
             except ServiceTimeoutError as e:
-                logging.warning(e)
+                logging.debug(e)
+            except asyncio.CancelledError:
+                pass
+            except (
+                NotConnected,
+                CannotConnect,
+                ConnectionFailed,
+            ):
+                await self.client.connect()
+            except Exception:
+                pass
 
     async def on_event(self, event: Event):
         """Handle an event from Home Assistant."""
