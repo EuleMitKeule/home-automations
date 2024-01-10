@@ -5,7 +5,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from home_automations.const import DEFAULT_CONFIG_FILE_PATH, ENV_CONFIG_FILE_PATH
+from home_automations.const import (
+    DEFAULT_CONFIG_FILE_PATH,
+    ENV_CONFIG_FILE_PATH,
+)
 from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
 from home_automations.helper.logger import Logger

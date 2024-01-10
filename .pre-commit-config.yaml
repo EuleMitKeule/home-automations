@@ -14,12 +14,12 @@ repos:
   - id: check-toml
   - id: detect-private-key
 - repo: https://github.com/jorisroovers/gitlint
+  rev: v0.19.1
   hooks:
   - id: gitlint
 - repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.11
   hooks:
     - id: ruff
-      args: [ "--fix", "--fixable F401" ]
+      args: [ "--fix", "--fixable", "F401" ]
     - id: ruff-format
-
-
