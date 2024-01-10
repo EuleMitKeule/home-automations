@@ -32,3 +32,5 @@ class Logger(ABC):
         )
 
         logging.getLogger("apscheduler.executors.default").propagate = False
+        logging.getLogger("apscheduler.scheduler").propagate = False
+        logging.getLogger("hass_client").propagate = False

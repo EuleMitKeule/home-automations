@@ -45,7 +45,7 @@ class HomeAutomations:
         while True:
             try:
                 try:
-                    await self.client.run(self.on_event)
+                    await self.client.subscribe_events(self.on_event)
                 except (NotConnected, CannotConnect, ConnectionFailed):
                     logging.error(
                         "Not connected to Home Assistant, retrying in 5 seconds"

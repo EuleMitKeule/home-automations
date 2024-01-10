@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from hass_client.models import Event, State
@@ -188,6 +189,7 @@ class ThermostatModule(BaseModule):
             "set_temperature",
             service_data={"temperature": await self.target_temp},
             target={"entity_id": self.thermostat_config.entity_id},
+            timeout=datetime.timedelta(minutes=2),
         )
 
         self.last_target_temp = await self.target_temp
