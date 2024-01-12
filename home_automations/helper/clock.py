@@ -1,4 +1,3 @@
-import asyncio
 from abc import ABC
 from datetime import datetime, time
 from typing import Any
@@ -26,28 +25,25 @@ class Clock(ABC):
 
     @classmethod
     async def run(cls):
-        while True:
-            if cls.current_day != cls.last_day:
-                cls.last_day = cls.current_day
-                for module in cls.clock_events:
-                    await module.on_day_changed(cls.current_day)
+        if cls.current_day != cls.last_day:
+            cls.last_day = cls.current_day
+            for module in cls.clock_events:
+                await module.on_day_changed(cls.current_day)
 
-            if cls.current_hour != cls.last_hour:
-                cls.last_hour = cls.current_hour
-                for module in cls.clock_events:
-                    await module.on_hour_changed(cls.current_hour)
+        if cls.current_hour != cls.last_hour:
+            cls.last_hour = cls.current_hour
+            for module in cls.clock_events:
+                await module.on_hour_changed(cls.current_hour)
 
-            if cls.current_minute != cls.last_minute:
-                cls.last_minute = cls.current_minute
-                for module in cls.clock_events:
-                    await module.on_minute_changed(cls.current_minute)
+        if cls.current_minute != cls.last_minute:
+            cls.last_minute = cls.current_minute
+            for module in cls.clock_events:
+                await module.on_minute_changed(cls.current_minute)
 
-            if cls.current_second != cls.last_second:
-                cls.last_second = cls.current_second
-                for module in cls.clock_events:
-                    await module.on_second_changed(cls.current_second)
-
-            await asyncio.sleep(0.25)
+        if cls.current_second != cls.last_second:
+            cls.last_second = cls.current_second
+            for module in cls.clock_events:
+                await module.on_second_changed(cls.current_second)
 
     @classmethod
     async def init(cls, config: Config):
@@ -93,10 +89,29 @@ class Clock(ABC):
     def resolve_schedule(cls, schedule: dict[str, Any]) -> str:
         """Return the maximum time reached in the schedule."""
 
+        schedule_key = cls._get_schedule_key(schedule)
+
+        return schedule[schedule_key]
+
+    @classmethod
+    def set_schedule(cls, schedule: dict[str, Any], value) -> dict[str, Any]:
+        """Set the schedule."""
+
+        schedule_key = cls._get_schedule_key(schedule)
+
+        schedule[schedule_key] = value
+
+        return schedule
+
+    @classmethod
+    def _get_schedule_key(cls, schedule: dict[str, Any]) -> str:
         max_time_reached = cls.parse_time("00:00:00")
         max_time = cls.parse_time("00:00:00")
         max_key_reached: str | None = None
         max_key: str | None = None
+
+        if len(schedule) == 1:
+            return list(schedule.keys())[0]
 
         for time_key in schedule.keys():
             time = cls.parse_time(time_key)
@@ -110,6 +125,6 @@ class Clock(ABC):
                 max_key = time_key
 
         if max_key_reached is None:
-            return schedule[max_key]
+            return max_key
 
-        return schedule[max_key_reached]
+        return max_key_reached

@@ -42,8 +42,6 @@ async def main():
     home_automations = HomeAutomations(config, client)
     await home_automations.run()
 
-    logging.info("Stopping Home Automations")
-
 
 def start():
     try:

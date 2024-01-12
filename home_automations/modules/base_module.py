@@ -11,12 +11,14 @@ from home_automations.models.config import Config
 
 class BaseModule(ClockEvents, ABC):
     client: Client
-    state_changed_events: dict[str, list[callable]] = {}
-    zha_events: dict[str, list[callable]] = {}
+    state_changed_events: dict[str, list[callable]]
+    zha_events: dict[str, list[callable]]
 
     def __init__(self, config: Config, client: Client):
         self.client = client
         self.config = config
+        self.state_changed_events = {}
+        self.zha_events = {}
 
         Clock.register_module(self)
 

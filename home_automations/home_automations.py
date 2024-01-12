@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Coroutine
 
 from dependency_injector.wiring import inject
 from hass_client.exceptions import (
@@ -32,36 +33,27 @@ class HomeAutomations:
         self.config = config
         self.client = client
         self.modules = [
-            ThermostatModule(config, client, thermostat_config)
-            for thermostat_config in config.thermostats
+            ThermostatModule(config, client, climate_config, thermostat_config)
+            for climate_config in config.climate_configs
+            for thermostat_config in climate_config.thermostat_configs
         ]
         self.modules += [TibberModule(config, client)]
         self.loop = asyncio.get_running_loop()
 
     async def run(self):
         """Run the HomeAutomations class."""
+
+        async def on_event(event: Event):
+            await self.handle_errors(self.on_event, event)
+
+        await self.handle_errors(
+            self.client.subscribe_events,
+            on_event,
+        )
+
         while True:
-            try:
-                await Clock.run()
-                await self.client.subscribe_events(self.on_event)
-                await asyncio.sleep(2)
-            except NotFoundError as e:
-                logging.error(e)
-            except NotFoundAgainError:
-                pass
-            except ServiceTimeoutError as e:
-                logging.debug(e)
-            except asyncio.CancelledError as e:
-                logging.exception(e)
-            except (
-                NotConnected,
-                CannotConnect,
-                ConnectionFailed,
-            ):
-                await self.client.connect()
-            except Exception as e:
-                # print error with traceback
-                logging.exception(e)
+            await self.handle_errors(Clock.run)
+            await asyncio.sleep(0.25)
 
     async def on_event(self, event: Event):
         """Handle an event from Home Assistant."""
@@ -74,3 +66,23 @@ class HomeAutomations:
 
             if event.event_type == "zha_event":
                 await module.on_zha_event(event)
+
+    async def handle_errors(self, func: Coroutine, *args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except NotFoundError as e:
+            logging.error(e)
+        except NotFoundAgainError as e:
+            logging.debug(e)
+        except ServiceTimeoutError as e:
+            logging.debug(e)
+        except asyncio.CancelledError:
+            logging.error("Operation was cancelled")
+        except (
+            NotConnected,
+            CannotConnect,
+            ConnectionFailed,
+        ):
+            await self.client.connect()
+        except Exception as e:
+            logging.exception(e)

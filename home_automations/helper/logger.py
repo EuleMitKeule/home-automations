@@ -17,7 +17,6 @@ class Logger(ABC):
 
         if not log_file_path.is_absolute():
             log_file_path = config.config_file_path.parent / log_file_path
-            config.logging.path = log_file_path.as_posix()
 
         logging.basicConfig(
             level=config.logging.level.upper()

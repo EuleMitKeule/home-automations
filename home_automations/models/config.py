@@ -7,10 +7,10 @@ import marshmallow_dataclass
 import yaml
 from dataclass_wizard import YAMLWizard
 
+from home_automations.models.climate_config import ClimateConfig
 from home_automations.models.dimmer_config import DimmerConfig
 from home_automations.models.homeassistant_config import HomeAssistantConfig
 from home_automations.models.logging_config import LoggingConfig
-from home_automations.models.thermostat_config import ThermostatConfig
 from home_automations.models.tibber_config import TibberConfig
 
 
@@ -21,7 +21,9 @@ class Config(YAMLWizard):
     config_file_path: Path = field(init=False, repr=False, compare=False)
     timezone: str
     homeassistant: HomeAssistantConfig
-    thermostats: list[ThermostatConfig] = field(default_factory=list)
+    climate_configs: list[ClimateConfig] = field(
+        default_factory=list, metadata={"data_key": "climate"}
+    )
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     tibber: TibberConfig = field(default_factory=TibberConfig)
     dimmer_configs: list[DimmerConfig] = field(default_factory=list)
@@ -41,6 +43,15 @@ class Config(YAMLWizard):
         result.config_file_path = file_path
 
         return result
+
+    def save(self):
+        """Save configuration to YAML file."""
+
+        with self.config_file_path.open("w") as yaml_file:
+            yaml.dump(
+                marshmallow_dataclass.class_schema(Config)().dump(self),
+                yaml_file,
+            )
 
     @classmethod
     def create_default_config(cls, file_path: Path):

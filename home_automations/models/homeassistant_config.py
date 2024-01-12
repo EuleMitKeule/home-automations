@@ -7,3 +7,4 @@ class HomeAssistantConfig:
 
     url: str
     token: str
+    home_automations_user_id: str

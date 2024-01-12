@@ -53,12 +53,10 @@ class Client:
                 logging.error("Authentication failed")
                 break
 
-    async def subscribe_events(self, on_event_callback: callable):
+    async def subscribe_events(self, on_event_callback: callable) -> callable:
         """Subscribe to events."""
 
-        while True:
-            await self.client.subscribe_events(on_event_callback)
-            await asyncio.sleep(2)
+        return await self.client.subscribe_events(on_event_callback)
 
     async def get_state(self, entity_id: str) -> State:
         """Return the state of an entity."""
