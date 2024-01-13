@@ -25,6 +25,10 @@ async def main():
 
     config = Config.load(config_file_path)
 
+    if config is None:
+        logging.error(f"Config could not be loaded from {config_file_path}")
+        return
+
     await Logger.init(config)
     await Clock.init(config)
 

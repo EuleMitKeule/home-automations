@@ -18,9 +18,7 @@ home-automations = "home_automations.__main__:start"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
-dataclass-wizard = "^0.22.2"
 python-dotenv = "^1.0.0"
-dependency-injector = "^4.41.0"
 pyyaml = "^6.0.1"
 marshmallow-dataclass = "^8.6.0"
 pytz = "^2023.3.post1"
@@ -28,6 +26,8 @@ python-hass-client = {git = "https://github.com/EuleMitKeule/python-hass-client"
 apscheduler = "^3.10.4"
 pytibber = "^0.28.2"
 colour = "^0.1.5"
+types-pytz = "^2023.3.1.1"
+types-pyyaml = "^6.0.12.12"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
@@ -40,3 +40,7 @@ pytest = "^7.4.4"
 
 [tool.ruff]
 unfixable = ["F401"]
+
+[tool.mypy]
+ignore_missing_imports = true
+check_untyped_defs = true

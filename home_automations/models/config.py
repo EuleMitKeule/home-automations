@@ -5,7 +5,6 @@ from typing import Optional
 
 import marshmallow_dataclass
 import yaml
-from dataclass_wizard import YAMLWizard
 
 from home_automations.models.climate_config import ClimateConfig
 from home_automations.models.dimmer_config import DimmerConfig
@@ -15,17 +14,17 @@ from home_automations.models.tibber_config import TibberConfig
 
 
 @dataclass
-class Config(YAMLWizard):
+class Config:
     """Configuration for the app."""
 
     config_file_path: Path = field(init=False, repr=False, compare=False)
     timezone: str
     homeassistant: HomeAssistantConfig
+    tibber: TibberConfig
     climate_configs: list[ClimateConfig] = field(
         default_factory=list, metadata={"data_key": "climate"}
     )
     logging: LoggingConfig = field(default_factory=LoggingConfig)
-    tibber: TibberConfig = field(default_factory=TibberConfig)
     dimmer_configs: list[DimmerConfig] = field(default_factory=list)
 
     @classmethod
@@ -61,6 +60,10 @@ class Config(YAMLWizard):
             timezone="Europe/Berlin",
             homeassistant=HomeAssistantConfig(
                 url="http://localhost:8123", token="token"
+            ),
+            tibber=TibberConfig(
+                token="token",
+                home_id="home_id",
             ),
         )
 

@@ -1,11 +1,11 @@
 import asyncio
 import logging
-from typing import Coroutine
+from typing import Any, Callable
 
-from dependency_injector.wiring import inject
 from hass_client.exceptions import (
     CannotConnect,
     ConnectionFailed,
+    FailedCommand,
     NotConnected,
     NotFoundError,
 )
@@ -26,7 +26,6 @@ class HomeAutomations:
     loop: asyncio.AbstractEventLoop
     modules: list[BaseModule]
 
-    @inject
     def __init__(self, config: Config, client: Client):
         """Initialize the HomeAutomations class."""
 
@@ -39,6 +38,7 @@ class HomeAutomations:
         ]
         self.modules += [TibberModule(config, client)]
         self.loop = asyncio.get_running_loop()
+        self.loop.set_exception_handler(self.handle_exception)
 
     async def run(self):
         """Run the HomeAutomations class."""
@@ -67,7 +67,33 @@ class HomeAutomations:
             if event.event_type == "zha_event":
                 await module.on_zha_event(event)
 
-    async def handle_errors(self, func: Coroutine, *args, **kwargs):
+    def handle_exception(
+        self, loop: asyncio.AbstractEventLoop, context: dict[str, Any]
+    ):
+        """Handle an exception in the event loop."""
+
+        exception = context.get("exception")
+
+        match exception:
+            case NotFoundError():
+                logging.error(exception)
+            case NotFoundAgainError():
+                logging.debug(exception)
+            case ServiceTimeoutError():
+                logging.debug(exception)
+            case asyncio.CancelledError():
+                logging.error("Operation was cancelled")
+            case FailedCommand():
+                logging.error(exception)
+            case NotConnected() | CannotConnect() | ConnectionFailed():
+                for task in asyncio.all_tasks():
+                    task.cancel()
+
+                self.connection_task = self.loop.create_task(self.client.connect())
+            case Exception():
+                logging.exception(exception)
+
+    async def handle_errors(self, func: Callable, *args, **kwargs):
         try:
             return await func(*args, **kwargs)
         except NotFoundError as e:
@@ -78,6 +104,8 @@ class HomeAutomations:
             logging.debug(e)
         except asyncio.CancelledError:
             logging.error("Operation was cancelled")
+        except FailedCommand as e:
+            logging.error(e)
         except (
             NotConnected,
             CannotConnect,

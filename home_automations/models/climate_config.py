@@ -1,6 +1,12 @@
 from dataclasses import dataclass, field
 
-from home_automations.const import DEFAULT_MAX_TARGET_TEMP, DEFAULT_MIN_TARGET_TEMP
+from home_automations.const import (
+    DEFAULT_MAX_EFFECTIVE_THERMOSTAT_TEMP,
+    DEFAULT_MAX_TARGET_DIFF,
+    DEFAULT_MAX_THERMOSTAT_TEMP,
+    DEFAULT_MIN_EFFECTIVE_THERMOSTAT_TEMP,
+    DEFAULT_MIN_THERMOSTAT_TEMP,
+)
 from home_automations.models.thermostat_config import ThermostatConfig
 
 
@@ -10,5 +16,8 @@ class ClimateConfig:
         metadata={"data_key": "thermostat"}
     )
     schedule: dict[str, float]
-    min_target_temp: float = DEFAULT_MIN_TARGET_TEMP
-    max_target_temp: float = DEFAULT_MAX_TARGET_TEMP
+    max_thermostat_temp: float = DEFAULT_MAX_THERMOSTAT_TEMP
+    min_thermostat_temp: float = DEFAULT_MIN_THERMOSTAT_TEMP
+    max_effective_thermostat_temp: float = DEFAULT_MAX_EFFECTIVE_THERMOSTAT_TEMP
+    min_effective_thermostat_temp: float = DEFAULT_MIN_EFFECTIVE_THERMOSTAT_TEMP
+    max_target_diff: float = DEFAULT_MAX_TARGET_DIFF

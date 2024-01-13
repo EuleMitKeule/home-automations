@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -7,4 +7,4 @@ class HomeAssistantConfig:
 
     url: str
     token: str
-    home_automations_user_id: str
+    home_automations_user_id: str = field(default="")

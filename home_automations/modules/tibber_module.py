@@ -35,11 +35,14 @@ class TibberModule(BaseModule):
 
             home = self.tibber.get_home(self.config.tibber.home_id)
 
+            if home is None:
+                return
+
             await home.fetch_consumption_data()
             await home.update_info()
             await home.update_price_info()
 
-            level_str = home.current_price_info["level"]
+            level_str = str(home.current_price_info["level"])
             level = TibberLevel(level_str)
             price = home.current_price_info["total"]
 

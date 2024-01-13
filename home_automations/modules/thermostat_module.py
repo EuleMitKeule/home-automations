@@ -1,5 +1,3 @@
-import asyncio
-import datetime
 import logging
 
 from hass_client.models import Event, State
@@ -7,6 +5,7 @@ from hass_client.models import Event, State
 from home_automations.const import ThermostatState
 from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
+from home_automations.helper.math import Math
 from home_automations.models.climate_config import ClimateConfig
 from home_automations.models.config import Config
 from home_automations.models.thermostat_config import ThermostatConfig
@@ -62,93 +61,7 @@ class ThermostatModule(BaseModule):
         return False
 
     @property
-    async def should_set_state(self) -> bool:
-        """Return whether the thermostat should be turned on."""
-
-        if await self.is_switch_off:
-            return False
-
-        return True
-
-    @property
-    async def has_scheduled_temp(self) -> bool:
-        """Return whether the thermostat has a scheduled temperature."""
-
-        temp_difference = await self.temp_difference
-
-        if temp_difference is None:
-            return False
-
-        return await self.temp_difference <= 0.25
-
-    @property
-    async def should_set_temp(self) -> bool:
-        """Return whether the thermostat should be set."""
-
-        if await self.is_switch_off:
-            return False
-
-        has_target_temp = await self.target_temp == await self.current_temp_climate
-        is_target_off = await self.target_state == ThermostatState.OFF
-        is_unavailable = await self.current_state == ThermostatState.UNAVAILABLE
-
-        if not has_target_temp and not is_target_off and not is_unavailable:
-            return True
-
-        return False
-
-    @property
-    async def target_state(self) -> ThermostatState:
-        """Return the target state for the current time."""
-
-        if await self.is_window_open:
-            return ThermostatState.OFF
-
-        return ThermostatState.HEAT
-
-    @property
-    async def temp_difference(self) -> float | None:
-        """Return the difference between the current and target temperature."""
-
-        current_temp = await self.current_temp
-        scheduled_temp = await self.scheduled_temp
-
-        if current_temp is None or scheduled_temp is None:
-            return None
-
-        return abs(scheduled_temp - current_temp)
-
-    @property
-    async def scheduled_temp(self) -> float | None:
-        """Return the scheduled temperature for the current time."""
-
-        return Clock.resolve_schedule(self.climate_config.schedule)
-
-    @property
-    async def target_temp(self) -> float | None:
-        """Return the target temperature for the current time."""
-
-        if await self.scheduled_temp is None or await self.current_temp is None:
-            return None
-
-        if await self.has_scheduled_temp:
-            return await self.scheduled_temp
-
-        if await self.scheduled_temp > await self.current_temp:
-            return self.climate_config.max_target_temp
-
-        return self.climate_config.min_target_temp
-
-    @property
-    async def current_state(self) -> ThermostatState:
-        """Return the current state."""
-
-        state = await self.client.get_state(self.thermostat_config.climate_entity)
-
-        return state.state
-
-    @property
-    async def current_temp_sensor(self) -> float | None:
+    async def current_room_temp(self) -> float | None:
         state = await self.client.get_state(self.thermostat_config.temperature_entity)
 
         try:
@@ -157,7 +70,42 @@ class ThermostatModule(BaseModule):
             return None
 
     @property
-    async def current_temp_climate(self) -> float | None:
+    async def target_room_temp(self) -> float:
+        """Return the target room temperature."""
+
+        return Clock.resolve_schedule(self.climate_config.schedule)
+
+    @property
+    async def room_temp_difference(self) -> float | None:
+        """Return the difference between the current and target temperature."""
+
+        current_temp = await self.current_room_temp
+        target_temp = await self.target_room_temp
+
+        if current_temp is None:
+            return None
+
+        return abs(target_temp - current_temp)
+
+    @property
+    async def current_thermostat_state(self) -> ThermostatState:
+        """Return the current state."""
+
+        state = await self.client.get_state(self.thermostat_config.climate_entity)
+
+        return state.state
+
+    @property
+    async def target_thermostat_state(self) -> ThermostatState:
+        """Return the target state for the thermostat."""
+
+        if await self.is_window_open:
+            return ThermostatState.OFF
+
+        return ThermostatState.HEAT
+
+    @property
+    async def current_thermostat_target_temp(self) -> float | None:
         state = await self.client.get_state(self.thermostat_config.climate_entity)
 
         if "temperature" not in state.attributes:
@@ -166,26 +114,55 @@ class ThermostatModule(BaseModule):
         return float(state.attributes["temperature"])
 
     @property
-    async def current_temp(self) -> float | None:
-        """Return the current temperature."""
+    async def current_thermostat_temp(self) -> float | None:
+        state = await self.client.get_state(self.thermostat_config.climate_entity)
 
-        if self.thermostat_config.temperature_entity is not None:
-            return await self.current_temp_sensor
+        if "current_temperature" not in state.attributes:
+            return None
 
-        return await self.current_temp_climate
+        return float(state.attributes["current_temperature"])
 
-    async def apply_state(self):
-        """Apply the on/off state."""
+    @property
+    async def target_thermostat_temp(self) -> float | None:
+        """Return the target temperature for the current time."""
 
-        if not await self.should_set_state:
-            return
+        room_temp_difference = await self.room_temp_difference
+        current_room_temp = await self.current_room_temp
 
-        service = (
-            "turn_off" if await self.target_state == ThermostatState.OFF else "turn_off"
+        if room_temp_difference is None or current_room_temp is None:
+            return None
+
+        room_temp_difference = (
+            min(self.climate_config.max_target_diff, room_temp_difference)
+            / self.climate_config.max_target_diff
         )
 
+        from_value = (
+            self.climate_config.min_effective_thermostat_temp
+            if current_room_temp > await self.target_room_temp
+            else self.climate_config.max_effective_thermostat_temp
+        )
+
+        return Math.round_to_nearest_half(
+            Math.lerp(from_value, await self.target_room_temp, room_temp_difference)
+        )
+
+    async def set_thermostat_state(self, state: ThermostatState):
+        """Set the thermostat state."""
+
+        if await self.is_switch_off:
+            return
+
+        if await self.current_thermostat_state == state:
+            return
+
+        if await self.current_thermostat_state == ThermostatState.UNAVAILABLE:
+            return
+
+        service = "turn_off" if state == ThermostatState.OFF else "turn_on"
+
         logging.info(
-            f"Turning {'off' if await self.target_state == ThermostatState.OFF else 'on'} {self.thermostat_config.climate_entity}."
+            f"Turning {'off' if state == ThermostatState.OFF else 'on'} {self.thermostat_config.climate_entity}."
         )
 
         await self.client.call_service(
@@ -194,44 +171,53 @@ class ThermostatModule(BaseModule):
             target={"entity_id": self.thermostat_config.climate_entity},
         )
 
-        if await self.target_state == ThermostatState.OFF:
+    async def set_thermostat_temp(self, temp: float):
+        """Set the thermostat temperature."""
+
+        if await self.is_switch_off:
             return
 
-        await self.apply_target_temp()
+        target_state = await self.target_thermostat_state
 
-    async def apply_target_temp(self):
-        """Apply the target temperature."""
-
-        if not await self.should_set_temp:
+        if target_state == ThermostatState.OFF:
             return
 
-        if await self.target_temp is None:
-            logging.warning(
-                f"Could not determine target temperature for thermostat {self.thermostat_config.climate_entity}"
-            )
+        if await self.current_thermostat_state == ThermostatState.UNAVAILABLE:
             return
 
-        await asyncio.sleep(0)
+        if temp < self.climate_config.min_effective_thermostat_temp:
+            await self.set_thermostat_state(ThermostatState.OFF)
+            return
+
+        temp = min(temp, self.climate_config.max_effective_thermostat_temp)
+
+        if temp == await self.current_thermostat_target_temp:
+            return
+
+        logging.info(f"Setting {self.thermostat_config.climate_entity} to {temp}.")
 
         await self.client.call_service(
             "climate",
             "set_temperature",
-            service_data={"temperature": await self.target_temp},
+            service_data={"temperature": temp},
             target={"entity_id": self.thermostat_config.climate_entity},
-            timeout=datetime.timedelta(minutes=2),
         )
-
-        logging.info(
-            f"Setting {self.thermostat_config.climate_entity} to {await self.target_temp}."
-        )
-
-        self.last_target_temp = await self.target_temp
 
     async def on_window_changed(self, event: Event, old_state: State, new_state: State):
-        await self.apply_state()
+        """Handle a window change event."""
+
+        if new_state.state == old_state.state:
+            return
+
+        await self.set_thermostat_state(await self.target_thermostat_state)
 
     async def on_second_changed(self, second: int):
-        await self.apply_target_temp()
+        target_thermostat_temp = await self.target_thermostat_temp
+
+        if target_thermostat_temp is None:
+            return
+
+        await self.set_thermostat_temp(target_thermostat_temp)
 
     async def on_climate_changed(
         self, event: Event, old_state: State, new_state: State
@@ -242,15 +228,14 @@ class ThermostatModule(BaseModule):
         ):
             return
 
-        old_target_temp = old_state.attributes["current_temperature"]
-        new_target_temp = new_state.attributes["current_temperature"]
+        old_target_temp = old_state.attributes["temperature"]
+        new_target_temp = new_state.attributes["temperature"]
 
         user_id = new_state.context["user_id"]
 
         if (
             old_target_temp != new_target_temp
             and user_id != self.config.homeassistant.home_automations_user_id
-            and len(self.thermostat_config.switch_entities) > 0
         ):
             logging.info(
                 f"Assigning new target temperature {new_target_temp} to {self.thermostat_config.climate_entity}"

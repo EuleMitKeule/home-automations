@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import logging
-from typing import Any
+from typing import Any, Callable
 
 import aiohttp
 from hass_client import HomeAssistantClient
@@ -53,7 +53,7 @@ class Client:
                 logging.error("Authentication failed")
                 break
 
-    async def subscribe_events(self, on_event_callback: callable) -> callable:
+    async def subscribe_events(self, on_event_callback: Callable) -> Callable:
         """Subscribe to events."""
 
         return await self.client.subscribe_events(on_event_callback)
