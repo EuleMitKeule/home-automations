@@ -58,7 +58,16 @@ class BaseModule(ClockEvents, ABC):
             await method_callable(event, old_state, new_state)
 
     async def on_zha_event(self, event: Event):
-        pass
+        if "device_ieee" not in event.data:
+            return
+
+        device_ieee = event.data["device_ieee"]
+
+        if device_ieee not in self.zha_events:
+            return
+
+        for method_callable in self.zha_events[device_ieee]:
+            await method_callable(event, device_ieee)
 
     def register_state_changed(self, method_callable: Callable, entity_id: str):
         self._register_event_callback(

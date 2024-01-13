@@ -16,6 +16,7 @@ from home_automations.helper.clock import Clock
 from home_automations.models.config import Config
 from home_automations.models.exceptions import NotFoundAgainError, ServiceTimeoutError
 from home_automations.modules.base_module import BaseModule
+from home_automations.modules.dimmer_module import DimmerModule
 from home_automations.modules.thermostat_module import ThermostatModule
 from home_automations.modules.tibber_module import TibberModule
 
@@ -35,6 +36,10 @@ class HomeAutomations:
             ThermostatModule(config, client, climate_config, thermostat_config)
             for climate_config in config.climate_configs
             for thermostat_config in climate_config.thermostat_configs
+        ]
+        self.modules += [
+            DimmerModule(config, client, dimmer_config)
+            for dimmer_config in config.dimmer_configs
         ]
         self.modules += [TibberModule(config, client)]
         self.loop = asyncio.get_running_loop()
