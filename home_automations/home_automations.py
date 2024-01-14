@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Any, Callable
 
+from apscheduler.events import EVENT_JOB_ERROR
 from hass_client.exceptions import (
     CannotConnect,
     ConnectionFailed,
@@ -11,6 +12,7 @@ from hass_client.exceptions import (
 )
 from hass_client.models import Event
 
+from home_automations.common import scheduler
 from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
 from home_automations.models.config import Config
@@ -48,6 +50,9 @@ class HomeAutomations:
     async def run(self):
         """Run the HomeAutomations class."""
 
+        scheduler.add_listener(self.handle_exception_apscheduler, EVENT_JOB_ERROR)
+        scheduler.start()
+
         async def on_event(event: Event):
             await self.handle_errors(self.on_event, event)
 
@@ -71,6 +76,20 @@ class HomeAutomations:
 
             if event.event_type == "zha_event":
                 await module.on_zha_event(event)
+
+    def handle_exception_apscheduler(self, event):
+        if not hasattr(event, "exception"):
+            return
+
+        if not isinstance(event.exception, Exception):
+            return
+
+        exception: Exception = event.exception
+
+        async def raise_exception(exception: Exception):
+            raise exception
+
+        self.loop.create_task(raise_exception(exception))
 
     def handle_exception(
         self, loop: asyncio.AbstractEventLoop, context: dict[str, Any]
