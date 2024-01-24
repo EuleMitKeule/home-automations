@@ -4,9 +4,9 @@ from aiohttp import ClientConnectorError
 from colour import Color
 from tibber import FatalHttpException, Tibber
 
-from home_automations.common import scheduler
 from home_automations.const import TibberLevel
 from home_automations.helper.client import Client
+from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.config import Config
 from home_automations.modules.base_module import BaseModule
 
@@ -17,16 +17,12 @@ class TibberModule(BaseModule):
     tibber: Tibber
     last_level: TibberLevel = TibberLevel.UNKNOWN
 
-    def __init__(self, config: Config, client: Client):
-        super().__init__(config, client)
+    def __init__(self, config: Config, client: Client, api: HomeAutomationsApi):
+        super().__init__(config, client, api)
 
         self.tibber = Tibber(
             access_token=config.tibber.token,
             user_agent="Home Automations",
-        )
-
-        scheduler.add_job(
-            self.on_update, "interval", seconds=self.config.tibber.update_interval
         )
 
     async def on_update(self):

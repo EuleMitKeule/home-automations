@@ -6,6 +6,7 @@ from home_automations.const import ThermostatState
 from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
 from home_automations.helper.math import Math
+from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.climate_config import ClimateConfig
 from home_automations.models.config import Config
 from home_automations.models.thermostat_config import ThermostatConfig
@@ -19,10 +20,11 @@ class ThermostatModule(BaseModule):
         self,
         config: Config,
         client: Client,
+        api: HomeAutomationsApi,
         climate_config: ClimateConfig,
         thermostat_config: ThermostatConfig,
     ):
-        super().__init__(config, client)
+        super().__init__(config, client, api)
 
         self.climate_config = climate_config
         self.thermostat_config = thermostat_config
@@ -31,7 +33,7 @@ class ThermostatModule(BaseModule):
             self.register_state_changed(self.on_window_changed, window_entity)
 
         self.register_state_changed(
-            self.on_climate_changed, self.thermostat_config.climate_entity
+            self.on_climate_changed, self.climate_config.climate_control_entity
         )
 
     @property

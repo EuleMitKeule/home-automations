@@ -1,3 +1,3 @@
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi import FastAPI
 
-scheduler: AsyncIOScheduler = AsyncIOScheduler()
+fastapi = FastAPI()

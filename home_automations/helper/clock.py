@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC
-from datetime import datetime, time
-from typing import Any
+from datetime import datetime, time, timedelta
+from typing import Any, Callable
 
 import pytz
 from pytz.tzinfo import BaseTzInfo
@@ -19,10 +19,17 @@ class Clock(ABC):
     last_second: int = -1
 
     clock_events: list[ClockEvents] = []
+    scheduled_tasks: list[tuple[Callable, timedelta, datetime]] = []
 
     @classmethod
     def register_module(cls, module: ClockEvents):
         cls.clock_events.append(module)
+
+    @classmethod
+    def register_task(cls, task: Callable, interval: timedelta):
+        if interval.total_seconds() < 1:
+            raise ValueError("Interval must be at least 1 second")
+        cls.scheduled_tasks.append((task, interval, datetime.now()))
 
     @classmethod
     async def run(cls):
@@ -46,6 +53,24 @@ class Clock(ABC):
             cls.last_second = cls.current_second()
             for module in cls.clock_events:
                 loop.create_task(module.on_second_changed(cls.current_second()))
+                loop.create_task(cls.run_tasks())
+
+    @classmethod
+    async def run_tasks(cls):
+        loop = asyncio.get_running_loop()
+
+        invoked_tasks: list[tuple[Callable, timedelta, datetime]] = []
+
+        for i, (task, interval, last_run) in enumerate(cls.scheduled_tasks):
+            if datetime.now() - last_run >= interval:
+                loop.create_task(task())
+
+                entry = cls.scheduled_tasks.pop(i)
+
+                invoked_tasks.append(entry)
+
+        for task, interval, last_run in invoked_tasks:
+            cls.scheduled_tasks.append((task, interval, datetime.now()))
 
     @classmethod
     async def init(cls, config: Config):

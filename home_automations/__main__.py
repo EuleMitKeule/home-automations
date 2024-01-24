@@ -1,9 +1,12 @@
 import asyncio
 import logging
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
+import uvicorn
 from dotenv import load_dotenv
+from fastapi import FastAPI
 
 from home_automations.const import (
     DEFAULT_CONFIG_FILE_PATH,
@@ -13,10 +16,12 @@ from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
 from home_automations.helper.logger import Logger
 from home_automations.home_automations import HomeAutomations
+from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.config import Config
 
 
-async def main():
+@asynccontextmanager
+async def main(app: FastAPI):
     load_dotenv()
 
     config_file_path: Path = Path(
@@ -43,17 +48,20 @@ async def main():
     client = Client(config)
     await client.connect()
 
-    home_automations = HomeAutomations(config, client)
-    await home_automations.run()
+    api = HomeAutomationsApi(app)
+    home_automations = HomeAutomations(config, client, api)
+
+    await asyncio.sleep(5)
+    asyncio.create_task(home_automations.run())
+
+    yield
+
+
+fastapi = FastAPI(lifespan=main)
 
 
 def start():
-    try:
-        loop = asyncio.get_event_loop()
-        loop.create_task(main())
-        loop.run_forever()
-    except KeyboardInterrupt:
-        pass
+    uvicorn.run(fastapi, host="localhost", port=5000, log_level="warning")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,6 @@ import asyncio
 import logging
 from typing import Any, Callable
 
-from apscheduler.events import EVENT_JOB_ERROR
 from hass_client.exceptions import (
     CannotConnect,
     ConnectionFailed,
@@ -12,13 +11,14 @@ from hass_client.exceptions import (
 )
 from hass_client.models import Event
 
-from home_automations.common import scheduler
 from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
+from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.config import Config
 from home_automations.models.exceptions import NotFoundAgainError, ServiceTimeoutError
 from home_automations.modules.base_module import BaseModule
 from home_automations.modules.dimmer_module import DimmerModule
+from home_automations.modules.dummy_module import DummyModule
 from home_automations.modules.thermostat_module import ThermostatModule
 from home_automations.modules.tibber_module import TibberModule
 
@@ -26,33 +26,33 @@ from home_automations.modules.tibber_module import TibberModule
 class HomeAutomations:
     config: Config
     client: Client
+    api: HomeAutomationsApi
     loop: asyncio.AbstractEventLoop
     modules: list[BaseModule]
+    connection_task: asyncio.Task | None
 
-    def __init__(self, config: Config, client: Client):
+    def __init__(self, config: Config, client: Client, api: HomeAutomationsApi):
         """Initialize the HomeAutomations class."""
 
         self.config = config
         self.client = client
+        self.api = api
         self.modules = [
-            ThermostatModule(config, client, climate_config, thermostat_config)
+            ThermostatModule(config, client, api, climate_config, thermostat_config)
             for climate_config in config.climate_configs
             for thermostat_config in climate_config.thermostat_configs
         ]
         self.modules += [
-            DimmerModule(config, client, dimmer_config)
+            DimmerModule(config, client, api, dimmer_config)
             for dimmer_config in config.dimmer_configs
         ]
-        self.modules += [TibberModule(config, client)]
+        self.modules += [TibberModule(config, client, api)]
+        self.modules += [DummyModule(config, client, api)]
         self.loop = asyncio.get_running_loop()
         self.loop.set_exception_handler(self.handle_exception)
+        self.connection_task = None
 
     async def run(self):
-        """Run the HomeAutomations class."""
-
-        scheduler.add_listener(self.handle_exception_apscheduler, EVENT_JOB_ERROR)
-        scheduler.start()
-
         async def on_event(event: Event):
             await self.handle_errors(self.on_event, event)
 
@@ -61,6 +61,10 @@ class HomeAutomations:
             on_event,
         )
 
+        self.update_task = self.loop.create_task(self.update())
+        await self.update_task
+
+    async def update(self):
         while True:
             await self.handle_errors(Clock.run)
             await asyncio.sleep(0.25)
@@ -76,20 +80,6 @@ class HomeAutomations:
 
             if event.event_type == "zha_event":
                 await module.on_zha_event(event)
-
-    def handle_exception_apscheduler(self, event):
-        if not hasattr(event, "exception"):
-            return
-
-        if not isinstance(event.exception, Exception):
-            return
-
-        exception: Exception = event.exception
-
-        async def raise_exception(exception: Exception):
-            raise exception
-
-        self.loop.create_task(raise_exception(exception))
 
     def handle_exception(
         self, loop: asyncio.AbstractEventLoop, context: dict[str, Any]
@@ -110,16 +100,15 @@ class HomeAutomations:
             case FailedCommand():
                 logging.error(exception)
             case NotConnected() | CannotConnect() | ConnectionFailed():
-                for task in asyncio.all_tasks():
-                    task.cancel()
-
+                if self.connection_task is not None and not self.connection_task.done():
+                    return
                 self.connection_task = self.loop.create_task(self.client.connect())
             case Exception():
                 logging.exception(exception)
 
     async def handle_errors(self, func: Callable, *args, **kwargs):
         try:
-            return await func(*args, **kwargs)
+            await func(*args, **kwargs)
         except NotFoundError as e:
             logging.error(e)
         except NotFoundAgainError as e:
@@ -135,6 +124,8 @@ class HomeAutomations:
             CannotConnect,
             ConnectionFailed,
         ):
-            await self.client.connect()
+            if self.connection_task is not None and not self.connection_task.done():
+                return
+            self.connection_task = self.loop.create_task(self.client.connect())
         except Exception as e:
             logging.exception(e)

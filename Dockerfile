@@ -30,5 +30,7 @@ RUN mkdir /config
 ENV CONFIG_FILE_PATH=/config/config.yml
 ENV LOG_FILE_PATH=/config/home_automations.log
 
+EXPOSE 5000
+
 VOLUME /config
 CMD ["python", "-m", "home_automations.__main__"]

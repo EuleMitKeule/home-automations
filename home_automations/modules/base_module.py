@@ -1,4 +1,7 @@
+"""Base module for all modules."""
+
 from abc import ABC
+from datetime import datetime, timedelta
 from typing import Any, Callable
 
 from hass_client.models import Event, State
@@ -6,19 +9,25 @@ from hass_client.models import Event, State
 from home_automations.helper.client import Client
 from home_automations.helper.clock import Clock
 from home_automations.helper.clock_events import ClockEvents
+from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.config import Config
 
 
 class BaseModule(ClockEvents, ABC):
+    config: Config
     client: Client
+    api: HomeAutomationsApi
     state_changed_events: dict[str, list[Callable]]
     zha_events: dict[str, list[Callable]]
+    scheduled_tasks: dict[str, tuple[Callable, timedelta, datetime]]
 
-    def __init__(self, config: Config, client: Client):
+    def __init__(self, config: Config, client: Client, api: HomeAutomationsApi):
         self.client = client
         self.config = config
+        self.api = api
         self.state_changed_events = {}
         self.zha_events = {}
+        self.scheduled_tasks = {}
 
         Clock.register_module(self)
 

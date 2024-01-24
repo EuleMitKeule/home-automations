@@ -16,6 +16,7 @@ class ClimateConfig:
         metadata={"data_key": "thermostat"}
     )
     schedule: dict[str, float]
+    climate_control_entity: str
     max_thermostat_temp: float = DEFAULT_MAX_THERMOSTAT_TEMP
     min_thermostat_temp: float = DEFAULT_MIN_THERMOSTAT_TEMP
     max_effective_thermostat_temp: float = DEFAULT_MAX_EFFECTIVE_THERMOSTAT_TEMP
