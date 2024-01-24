@@ -3,7 +3,7 @@
     "name": "Home Automations",
     "documentation": "https://github.com/eulemitkeule/home-automations",
     "issue_tracker": "https://github.com/eulemitkeule/home-automations/issues",
-    "requirements": [],
+    "requirements": ["git+https://github.com/eulemitkeule/home-automations"],
     "codeowners": ["@eulemitkeule"],
     "iot_class": "local_polling",
     "version": "0.0.0",
