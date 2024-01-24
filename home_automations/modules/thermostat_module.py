@@ -280,6 +280,9 @@ class ThermostatModule(BaseModule):
         self._last_control_state = state
 
     async def on_climate_temperature_changed(self, temperature: float) -> None:
+        if await self.current_control_state == ThermostatState.HEAT:
+            return
+
         logging.info(
             f"Assigning new target temperature {temperature} to {self.thermostat_config.climate_entity}"
         )
