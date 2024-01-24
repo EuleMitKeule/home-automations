@@ -21,29 +21,10 @@ from home_automations.models.config import Config
 
 
 @asynccontextmanager
-async def main(app: FastAPI):
-    load_dotenv()
+async def lifespan(app: FastAPI):
+    config: Config = app.state.config
 
-    config_file_path: Path = Path(
-        os.getenv(ENV_CONFIG_FILE_PATH, default=DEFAULT_CONFIG_FILE_PATH)
-    )
-
-    config = Config.load(config_file_path)
-
-    if config is None:
-        logging.error(f"Config could not be loaded from {config_file_path}")
-        return
-
-    await Logger.init(config)
     await Clock.init(config)
-
-    if config is None:
-        asyncio.get_event_loop().stop()
-        return
-
-    logging.info("Starting Home Automations")
-    logging.info(f"Config file path: {config_file_path}")
-    logging.info(f"Log file path: {config.logging.path}")
 
     client = Client(config)
     await client.connect()
@@ -57,11 +38,37 @@ async def main(app: FastAPI):
     yield
 
 
-fastapi = FastAPI(lifespan=main)
+fastapi = FastAPI(lifespan=lifespan)
 
 
 def start():
-    uvicorn.run(fastapi, host="localhost", port=5000, log_level="warning")
+    load_dotenv()
+
+    config_file_path: Path = Path(
+        os.getenv(ENV_CONFIG_FILE_PATH, default=DEFAULT_CONFIG_FILE_PATH)
+    )
+
+    config = Config.load(config_file_path)
+
+    if config is None:
+        logging.error(f"Config could not be loaded from {config_file_path}")
+        return
+
+    if config is None:
+        asyncio.get_event_loop().stop()
+        return
+
+    Logger.init(config)
+
+    logging.info("Starting Home Automations")
+    logging.info(f"Config file path: {config_file_path}")
+    logging.info(f"Log file path: {config.logging.path}")
+
+    fastapi.state.config = config
+
+    uvicorn.run(
+        fastapi, host=config.api.host, port=config.api.port, log_level="warning"
+    )
 
 
 if __name__ == "__main__":

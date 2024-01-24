@@ -6,6 +6,7 @@ from typing import Optional
 import marshmallow_dataclass
 import yaml
 
+from home_automations.models.api_config import ApiConfig
 from home_automations.models.climate_config import ClimateConfig
 from home_automations.models.dimmer_config import DimmerConfig
 from home_automations.models.homeassistant_config import HomeAssistantConfig
@@ -25,6 +26,7 @@ class Config:
         default_factory=list, metadata={"data_key": "climate"}
     )
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+    api: ApiConfig = field(default_factory=ApiConfig)
     dimmer_configs: list[DimmerConfig] = field(default_factory=list)
 
     @classmethod

@@ -21,6 +21,9 @@ DEFAULT_MAX_TARGET_DIFF = 4.5
 
 DEFAULT_TIBBER_UPDATE_INTERVAL = 60
 
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 5000
+
 
 class ThermostatState(str, Enum):
     OFF = "off"

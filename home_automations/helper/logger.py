@@ -10,7 +10,7 @@ from home_automations.models.config import Config
 
 class Logger(ABC):
     @classmethod
-    async def init(cls, config: Config):
+    def init(cls, config: Config):
         log_file_path = Path(
             config.logging.path or os.getenv(ENV_LOG_FILE_PATH) or DEFAULT_LOGGING_PATH
         )
