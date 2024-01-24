@@ -6,4 +6,3 @@ class ThermostatConfig:
     climate_entity: str
     temperature_entity: str
     window_entities: list[str]
-    switch_entities: list[str]
