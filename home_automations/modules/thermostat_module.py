@@ -36,6 +36,8 @@ class ThermostatModule(BaseModule):
             self.on_climate_changed, self.climate_config.climate_control_entity
         )
 
+        self._last_control_state: ThermostatState | None = None
+
     @property
     async def is_window_open(self) -> bool:
         """Return whether one of the windows is open."""
@@ -49,18 +51,6 @@ class ThermostatModule(BaseModule):
                 is_open = True
 
         return is_open
-
-    @property
-    async def is_switch_off(self) -> bool:
-        """Return whether any of the switches are off."""
-
-        for switch in self.thermostat_config.switch_entities:
-            state = await self.client.get_state(switch)
-
-            if state.state == "off":
-                return True
-
-        return False
 
     @property
     async def current_room_temp(self) -> float | None:
@@ -90,6 +80,22 @@ class ThermostatModule(BaseModule):
         return abs(target_temp - current_temp)
 
     @property
+    async def current_control_state(self) -> ThermostatState:
+        state = await self.client.get_state(self.climate_config.climate_control_entity)
+
+        return state.state
+
+    @property
+    async def target_control_state(self) -> ThermostatState:
+        if self._last_control_state is None:
+            self._last_control_state = await self.current_control_state
+
+        if await self.is_window_open:
+            return ThermostatState.OFF
+
+        return self._last_control_state
+
+    @property
     async def current_thermostat_state(self) -> ThermostatState:
         """Return the current state."""
 
@@ -98,10 +104,22 @@ class ThermostatModule(BaseModule):
         return state.state
 
     @property
-    async def target_thermostat_state(self) -> ThermostatState:
+    async def target_thermostat_state(self) -> ThermostatState | None:
         """Return the target state for the thermostat."""
 
-        if await self.is_window_open:
+        target_thermostat_temp = await self.target_thermostat_temp
+
+        if target_thermostat_temp is None:
+            return None
+
+        if (
+            await self.is_window_open
+            or await self.current_control_state == ThermostatState.OFF
+            or (
+                target_thermostat_temp
+                < self.climate_config.min_effective_thermostat_temp
+            )
+        ):
             return ThermostatState.OFF
 
         return ThermostatState.HEAT
@@ -149,16 +167,24 @@ class ThermostatModule(BaseModule):
             Math.lerp(from_value, await self.target_room_temp, room_temp_difference)
         )
 
+    @property
+    async def is_automation_enabled(self) -> bool:
+        """Return whether the automation is enabled."""
+
+        return (
+            await self.current_control_state != ThermostatState.HEAT
+            and not await self.current_control_state == ThermostatState.UNAVAILABLE
+            and not await self.current_thermostat_state == ThermostatState.UNAVAILABLE
+        )
+
     async def set_thermostat_state(self, state: ThermostatState):
         """Set the thermostat state."""
 
-        if await self.is_switch_off:
+        if not await self.is_automation_enabled:
             return
 
-        if await self.current_thermostat_state == state:
-            return
-
-        if await self.current_thermostat_state == ThermostatState.UNAVAILABLE:
+        current_thermostat_state = await self.current_thermostat_state
+        if current_thermostat_state == state:
             return
 
         service = "turn_off" if state == ThermostatState.OFF else "turn_on"
@@ -173,22 +199,13 @@ class ThermostatModule(BaseModule):
             target={"entity_id": self.thermostat_config.climate_entity},
         )
 
-    async def set_thermostat_temp(self, temp: float):
+    async def set_thermostat_temp(self, temp: float) -> None:
         """Set the thermostat temperature."""
 
-        if await self.is_switch_off:
+        if not await self.is_automation_enabled:
             return
 
-        target_state = await self.target_thermostat_state
-
-        if target_state == ThermostatState.OFF:
-            return
-
-        if await self.current_thermostat_state == ThermostatState.UNAVAILABLE:
-            return
-
-        if temp < self.climate_config.min_effective_thermostat_temp:
-            await self.set_thermostat_state(ThermostatState.OFF)
+        if await self.target_thermostat_state == ThermostatState.OFF:
             return
 
         temp = min(temp, self.climate_config.max_effective_thermostat_temp)
@@ -208,18 +225,25 @@ class ThermostatModule(BaseModule):
     async def on_window_changed(self, event: Event, old_state: State, new_state: State):
         """Handle a window change event."""
 
-        if new_state.state == old_state.state:
-            return
+        # if await self.current_control_state != ThermostatState.AUTO:
+        #     return
 
-        await self.set_thermostat_state(await self.target_thermostat_state)
+        # if new_state.state == old_state.state:
+        #     return
+
+        # await self.set_thermostat_state(await self.target_thermostat_state)
 
     async def on_second_changed(self, second: int):
+        """Handle a second change event."""
+
         target_thermostat_temp = await self.target_thermostat_temp
+        target_thermostat_state = await self.target_thermostat_state
 
-        if target_thermostat_temp is None:
-            return
+        if target_thermostat_temp is not None:
+            await self.set_thermostat_temp(target_thermostat_temp)
 
-        await self.set_thermostat_temp(target_thermostat_temp)
+        if target_thermostat_state is not None:
+            await self.set_thermostat_state(target_thermostat_state)
 
     async def on_climate_changed(
         self, event: Event, old_state: State, new_state: State
@@ -230,18 +254,35 @@ class ThermostatModule(BaseModule):
         ):
             return
 
+        user_id = new_state.context["user_id"]
+
         old_target_temp = old_state.attributes["temperature"]
         new_target_temp = new_state.attributes["temperature"]
 
-        user_id = new_state.context["user_id"]
+        old_thermostat_state = ThermostatState(old_state.state)
+        new_thermostat_state = ThermostatState(new_state.state)
+
+        if (
+            old_thermostat_state != new_thermostat_state
+            and user_id != self.config.homeassistant.home_automations_user_id
+        ):
+            await self.on_climate_hvac_state_changed(new_thermostat_state)
+            return
 
         if (
             old_target_temp != new_target_temp
             and user_id != self.config.homeassistant.home_automations_user_id
         ):
-            logging.info(
-                f"Assigning new target temperature {new_target_temp} to {self.thermostat_config.climate_entity}"
-            )
+            await self.on_climate_temperature_changed(new_target_temp)
+            return
 
-            Clock.set_schedule(self.climate_config.schedule, new_target_temp)
-            self.config.save()
+    async def on_climate_hvac_state_changed(self, state: ThermostatState) -> None:
+        self._last_control_state = state
+
+    async def on_climate_temperature_changed(self, temperature: float) -> None:
+        logging.info(
+            f"Assigning new target temperature {temperature} to {self.thermostat_config.climate_entity}"
+        )
+
+        Clock.set_schedule(self.climate_config.schedule, temperature)
+        self.config.save()
