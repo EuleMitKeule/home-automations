@@ -23,12 +23,20 @@ class Client:
     session: aiohttp.ClientSession
     client: HomeAssistantClient
     unknown_entities: set[str] = set()
-    called_services: dict[int, datetime.datetime] = {}
+    called_services: dict[int, datetime.datetime]
+    on_connection_callbacks: list[Callable]
 
     def __init__(self, config: Config):
         """Initialize the Client class."""
 
         self.config = config
+        self.called_services = {}
+        self.on_connection_callbacks = []
+
+    def register_on_connection(self, callback: Callable):
+        """Register a callback to run when connected."""
+
+        self.on_connection_callbacks.append(callback)
 
     async def connect(self):
         """Enter the Client class."""
@@ -52,6 +60,14 @@ class Client:
             except AuthenticationFailed:
                 logging.error("Authentication failed")
                 break
+
+        await self.on_connected()
+
+    async def on_connected(self):
+        """Run when connected to Home Assistant."""
+
+        for callback in self.on_connection_callbacks:
+            await callback()
 
     async def subscribe_events(self, on_event_callback: Callable) -> Callable:
         """Subscribe to events."""

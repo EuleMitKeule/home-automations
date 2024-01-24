@@ -51,8 +51,15 @@ class HomeAutomations:
         self.loop = asyncio.get_running_loop()
         self.loop.set_exception_handler(self.handle_exception)
         self.connection_task = None
+        self.client.register_on_connection(self.on_connection)
 
     async def run(self):
+        await self.on_connection()
+
+        self.update_task = self.loop.create_task(self.update())
+        await self.update_task
+
+    async def on_connection(self):
         async def on_event(event: Event):
             await self.handle_errors(self.on_event, event)
 
@@ -60,9 +67,6 @@ class HomeAutomations:
             self.client.subscribe_events,
             on_event,
         )
-
-        self.update_task = self.loop.create_task(self.update())
-        await self.update_task
 
     async def update(self):
         while True:
