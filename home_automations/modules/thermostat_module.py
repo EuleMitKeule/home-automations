@@ -188,12 +188,12 @@ class ThermostatModule(BaseModule):
         if current_thermostat_state == state:
             return
 
-        logging.info(f"Selecting thermostat mode {state}.")
+        logging.info(f"Selecting thermostat mode {state.value}.")
 
         await self.tools.client.call_service(
             "climate",
             "set_hvac_mode",
-            service_data={"hvac_mode": str(state)},
+            service_data={"hvac_mode": state.value},
             target={"entity_id": self.thermostat_config.climate_entity},
         )
 
