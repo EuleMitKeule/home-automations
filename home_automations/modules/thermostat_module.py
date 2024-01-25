@@ -188,15 +188,12 @@ class ThermostatModule(BaseModule):
         if current_thermostat_state == state:
             return
 
-        service = "turn_off" if state == ThermostatState.OFF else "turn_on"
-
-        logging.info(
-            f"Turning {'off' if state == ThermostatState.OFF else 'on'} {self.thermostat_config.climate_entity}."
-        )
+        logging.info(f"Selecting thermostat mode {state}.")
 
         await self.tools.client.call_service(
             "climate",
-            service,
+            "set_hvac_mode",
+            service_data={"hvac_mode": str(state)},
             target={"entity_id": self.thermostat_config.climate_entity},
         )
 
