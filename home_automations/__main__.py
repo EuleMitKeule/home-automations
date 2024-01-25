@@ -12,28 +12,15 @@ from home_automations.const import (
     DEFAULT_CONFIG_FILE_PATH,
     ENV_CONFIG_FILE_PATH,
 )
-from home_automations.helper.client import Client
-from home_automations.helper.clock import Clock
 from home_automations.helper.logger import Logger
 from home_automations.home_automations import HomeAutomations
-from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.config import Config
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    config: Config = app.state.config
-
-    await Clock.init(config)
-
-    client = Client(config)
-    await client.connect()
-
-    api = HomeAutomationsApi(app)
-    home_automations = HomeAutomations(config, client, api)
-
-    await asyncio.sleep(5)
-    asyncio.create_task(home_automations.run())
+    home_automations = HomeAutomations(app)
+    await home_automations.start()
 
     yield
 
@@ -41,7 +28,7 @@ async def lifespan(app: FastAPI):
 fastapi = FastAPI(lifespan=lifespan)
 
 
-def start():
+def main():
     load_dotenv()
 
     config_file_path: Path = Path(
@@ -72,4 +59,4 @@ def start():
 
 
 if __name__ == "__main__":
-    start()
+    main()

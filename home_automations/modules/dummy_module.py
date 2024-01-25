@@ -1,24 +1,28 @@
 from datetime import datetime, timedelta
 
-from home_automations.helper.client import Client
-from home_automations.helper.clock import Clock
-from home_automations.home_automations_api import HomeAutomationsApi
+from hass_client.models import Event, State
+
 from home_automations.models.config import Config
 from home_automations.modules.base_module import BaseModule
+from home_automations.tools import Tools
 
 
 class DummyModule(BaseModule):
-    def __init__(self, config: Config, client: Client, api: HomeAutomationsApi):
-        super().__init__(config, client, api)
+    def __init__(
+        self,
+        config: Config,
+        tools: Tools,
+    ):
+        super().__init__(config, tools)
 
         self.register_state_changed(
             self.on_dummy_state_changed, "switch.home_automations_dummy"
         )
 
-        Clock.register_task(self.switch_dummy, timedelta(seconds=5))
+        self.tools.clock.register_task(self.switch_dummy, timedelta(seconds=5))
 
     async def switch_dummy(self) -> None:
-        await self.client.call_service(
+        await self.tools.client.call_service(
             "switch",
             "toggle",
             target={
@@ -26,5 +30,7 @@ class DummyModule(BaseModule):
             },
         )
 
-    async def on_dummy_state_changed(self, event, old_state, new_state) -> None:
-        self.api._last_state_changed = datetime.now()
+    async def on_dummy_state_changed(
+        self, event: Event, old_state: State, new_state: State
+    ) -> None:
+        self.tools.api._last_state_changed = datetime.now()

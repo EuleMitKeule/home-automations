@@ -4,7 +4,7 @@ import logging
 from typing import Any, Callable
 
 import aiohttp
-from hass_client import HomeAssistantClient
+from hass_client import HomeAssistantClient as HassClient
 from hass_client.exceptions import (
     AuthenticationFailed,
     CannotConnect,
@@ -18,10 +18,10 @@ from home_automations.models.config import Config
 from home_automations.models.exceptions import NotFoundAgainError, ServiceTimeoutError
 
 
-class Client:
+class HomeAssistantClient:
     config: Config
     session: aiohttp.ClientSession
-    client: HomeAssistantClient
+    client: HassClient
     unknown_entities: set[str] = set()
     called_services: dict[int, datetime.datetime]
     on_connection_callbacks: list[Callable]
@@ -41,7 +41,7 @@ class Client:
     async def connect(self):
         """Enter the Client class."""
 
-        self.client = HomeAssistantClient(
+        self.client = HassClient(
             self.config.homeassistant.url,
             self.config.homeassistant.token,
         )

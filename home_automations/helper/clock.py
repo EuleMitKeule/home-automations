@@ -1,103 +1,90 @@
 import asyncio
-from abc import ABC
 from datetime import datetime, time, timedelta
 from typing import Any, Callable
 
 import pytz
 from pytz.tzinfo import BaseTzInfo
 
-from home_automations.const import DEFAULT_TZ
 from home_automations.helper.clock_events import ClockEvents
 from home_automations.models.config import Config
 
 
-class Clock(ABC):
-    tz: BaseTzInfo = pytz.timezone(DEFAULT_TZ)
-    last_day: int = -1
-    last_hour: int = -1
-    last_minute: int = -1
-    last_second: int = -1
+class Clock:
+    def __init__(self, config: Config):
+        """Initialize the Clock class."""
 
-    clock_events: list[ClockEvents] = []
-    scheduled_tasks: list[tuple[Callable, timedelta, datetime]] = []
+        self.config: Config = config
+        self.tz: BaseTzInfo = pytz.timezone(config.timezone)
+        self.last_day: int = -1
+        self.last_hour: int = -1
+        self.last_minute: int = -1
+        self.last_second: int = -1
+        self.clock_events: list[ClockEvents] = []
+        self.scheduled_tasks: list[tuple[Callable, timedelta, datetime]] = []
 
-    @classmethod
-    def register_module(cls, module: ClockEvents):
-        cls.clock_events.append(module)
+    def register_module(self, module: ClockEvents):
+        self.clock_events.append(module)
 
-    @classmethod
-    def register_task(cls, task: Callable, interval: timedelta):
+    def register_task(self, task: Callable, interval: timedelta):
         if interval.total_seconds() < 1:
             raise ValueError("Interval must be at least 1 second")
-        cls.scheduled_tasks.append((task, interval, datetime.now()))
+        self.scheduled_tasks.append((task, interval, datetime.now()))
 
-    @classmethod
-    async def run(cls):
+    async def run(self):
         loop = asyncio.get_running_loop()
-        if cls.current_day() != cls.last_day:
-            cls.last_day = cls.current_day()
-            for module in cls.clock_events:
-                loop.create_task(module.on_day_changed(cls.current_day()))
+        if self.current_day() != self.last_day:
+            self.last_day = self.current_day()
+            for module in self.clock_events:
+                loop.create_task(module.on_day_changed(self.current_day()))
 
-        if cls.current_hour() != cls.last_hour:
-            cls.last_hour = cls.current_hour()
-            for module in cls.clock_events:
-                loop.create_task(module.on_hour_changed(cls.current_hour()))
+        if self.current_hour() != self.last_hour:
+            self.last_hour = self.current_hour()
+            for module in self.clock_events:
+                loop.create_task(module.on_hour_changed(self.current_hour()))
 
-        if cls.current_minute() != cls.last_minute:
-            cls.last_minute = cls.current_minute()
-            for module in cls.clock_events:
-                loop.create_task(module.on_minute_changed(cls.current_minute()))
+        if self.current_minute() != self.last_minute:
+            self.last_minute = self.current_minute()
+            for module in self.clock_events:
+                loop.create_task(module.on_minute_changed(self.current_minute()))
 
-        if cls.current_second() != cls.last_second:
-            cls.last_second = cls.current_second()
-            for module in cls.clock_events:
-                loop.create_task(module.on_second_changed(cls.current_second()))
-                loop.create_task(cls.run_tasks())
+        if self.current_second() != self.last_second:
+            self.last_second = self.current_second()
+            for module in self.clock_events:
+                loop.create_task(module.on_second_changed(self.current_second()))
+                loop.create_task(self.run_tasks())
 
-    @classmethod
-    async def run_tasks(cls):
+    async def run_tasks(self):
         loop = asyncio.get_running_loop()
 
         invoked_tasks: list[tuple[Callable, timedelta, datetime]] = []
 
-        for i, (task, interval, last_run) in enumerate(cls.scheduled_tasks):
+        for i, (task, interval, last_run) in enumerate(self.scheduled_tasks):
             if datetime.now() - last_run >= interval:
                 loop.create_task(task())
 
-                entry = cls.scheduled_tasks.pop(i)
+                entry = self.scheduled_tasks.pop(i)
 
                 invoked_tasks.append(entry)
 
         for task, interval, last_run in invoked_tasks:
-            cls.scheduled_tasks.append((task, interval, datetime.now()))
+            self.scheduled_tasks.append((task, interval, datetime.now()))
 
-    @classmethod
-    async def init(cls, config: Config):
-        Clock.tz = pytz.timezone(config.timezone)
+    def current_time(self) -> time:
+        return datetime.now(self.tz).time()
 
-    @classmethod
-    def current_time(cls) -> time:
-        return datetime.now(Clock.tz).time()
+    def current_day(self) -> int:
+        return datetime.now(self.tz).day
 
-    @classmethod
-    def current_day(cls) -> int:
-        return datetime.now(Clock.tz).day
+    def current_hour(self) -> int:
+        return datetime.now(self.tz).hour
 
-    @classmethod
-    def current_hour(cls) -> int:
-        return datetime.now(Clock.tz).hour
+    def current_minute(self) -> int:
+        return datetime.now(self.tz).minute
 
-    @classmethod
-    def current_minute(cls) -> int:
-        return datetime.now(Clock.tz).minute
+    def current_second(self) -> int:
+        return datetime.now(self.tz).second
 
-    @classmethod
-    def current_second(cls) -> int:
-        return datetime.now(Clock.tz).second
-
-    @classmethod
-    def parse_time(cls, time_string: str) -> time:
+    def parse_time(self, time_string: str) -> time:
         if ":" in time_string:
             format_string = "%H:%M:%S" if len(time_string.split(":")) == 3 else "%H:%M"
         else:
@@ -107,28 +94,25 @@ class Clock(ABC):
 
         return parsed_time
 
-    @classmethod
-    def resolve_schedule(cls, schedule: dict[str, Any]) -> Any:
+    def resolve_schedule(self, schedule: dict[str, Any]) -> Any:
         """Return the maximum value reached in the schedule."""
 
-        schedule_key = cls._get_schedule_key(schedule)
+        schedule_key = self._get_schedule_key(schedule)
 
         return schedule[schedule_key]
 
-    @classmethod
-    def set_schedule(cls, schedule: dict[str, Any], value) -> dict[str, Any]:
+    def set_schedule(self, schedule: dict[str, Any], value) -> dict[str, Any]:
         """Set the schedule."""
 
-        schedule_key = cls._get_schedule_key(schedule)
+        schedule_key = self._get_schedule_key(schedule)
 
         schedule[schedule_key] = value
 
         return schedule
 
-    @classmethod
-    def _get_schedule_key(cls, schedule: dict[str, Any]) -> str:
-        max_time_reached = cls.parse_time("00:00:00")
-        max_time = cls.parse_time("00:00:00")
+    def _get_schedule_key(self, schedule: dict[str, Any]) -> str:
+        max_time_reached = self.parse_time("00:00:00")
+        max_time = self.parse_time("00:00:00")
         max_key_reached: str | None = None
         max_key: str = list(schedule.keys())[0]
 
@@ -139,9 +123,9 @@ class Clock(ABC):
             return max_key
 
         for time_key in schedule.keys():
-            time = cls.parse_time(time_key)
+            time = self.parse_time(time_key)
 
-            if time > max_time_reached and time <= cls.current_time():
+            if time > max_time_reached and time <= self.current_time():
                 max_time_reached = time
                 max_key_reached = time_key
 

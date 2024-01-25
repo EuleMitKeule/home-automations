@@ -14,7 +14,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-home-automations = "home_automations.__main__:start"
+home-automations = "home_automations.__main__:main"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"

@@ -3,14 +3,12 @@ import logging
 from hass_client.models import Event, State
 
 from home_automations.const import ThermostatState
-from home_automations.helper.client import Client
-from home_automations.helper.clock import Clock
 from home_automations.helper.math import Math
-from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.climate_config import ClimateConfig
 from home_automations.models.config import Config
 from home_automations.models.thermostat_config import ThermostatConfig
 from home_automations.modules.base_module import BaseModule
+from home_automations.tools import Tools
 
 
 class ThermostatModule(BaseModule):
@@ -19,12 +17,11 @@ class ThermostatModule(BaseModule):
     def __init__(
         self,
         config: Config,
-        client: Client,
-        api: HomeAutomationsApi,
+        tools: Tools,
         climate_config: ClimateConfig,
         thermostat_config: ThermostatConfig,
     ):
-        super().__init__(config, client, api)
+        super().__init__(config, tools)
 
         self.climate_config = climate_config
         self.thermostat_config = thermostat_config
@@ -45,7 +42,7 @@ class ThermostatModule(BaseModule):
         is_open: bool = False
 
         for window in self.thermostat_config.window_entities:
-            state = await self.client.get_state(window)
+            state = await self.tools.client.get_state(window)
 
             if state.state == "on":
                 is_open = True
@@ -54,7 +51,9 @@ class ThermostatModule(BaseModule):
 
     @property
     async def current_room_temp(self) -> float | None:
-        state = await self.client.get_state(self.thermostat_config.temperature_entity)
+        state = await self.tools.client.get_state(
+            self.thermostat_config.temperature_entity
+        )
 
         try:
             return float(state.state)
@@ -65,7 +64,7 @@ class ThermostatModule(BaseModule):
     async def target_room_temp(self) -> float:
         """Return the target room temperature."""
 
-        return Clock.resolve_schedule(self.climate_config.schedule)
+        return self.tools.clock.resolve_schedule(self.climate_config.schedule)
 
     @property
     async def room_temp_difference(self) -> float | None:
@@ -81,7 +80,9 @@ class ThermostatModule(BaseModule):
 
     @property
     async def current_control_state(self) -> ThermostatState:
-        state = await self.client.get_state(self.climate_config.climate_control_entity)
+        state = await self.tools.client.get_state(
+            self.climate_config.climate_control_entity
+        )
 
         return state.state
 
@@ -99,7 +100,7 @@ class ThermostatModule(BaseModule):
     async def current_thermostat_state(self) -> ThermostatState:
         """Return the current state."""
 
-        state = await self.client.get_state(self.thermostat_config.climate_entity)
+        state = await self.tools.client.get_state(self.thermostat_config.climate_entity)
 
         return state.state
 
@@ -126,7 +127,7 @@ class ThermostatModule(BaseModule):
 
     @property
     async def current_thermostat_target_temp(self) -> float | None:
-        state = await self.client.get_state(self.thermostat_config.climate_entity)
+        state = await self.tools.client.get_state(self.thermostat_config.climate_entity)
 
         if "temperature" not in state.attributes:
             return None
@@ -135,7 +136,7 @@ class ThermostatModule(BaseModule):
 
     @property
     async def current_thermostat_temp(self) -> float | None:
-        state = await self.client.get_state(self.thermostat_config.climate_entity)
+        state = await self.tools.client.get_state(self.thermostat_config.climate_entity)
 
         if "current_temperature" not in state.attributes:
             return None
@@ -193,7 +194,7 @@ class ThermostatModule(BaseModule):
             f"Turning {'off' if state == ThermostatState.OFF else 'on'} {self.thermostat_config.climate_entity}."
         )
 
-        await self.client.call_service(
+        await self.tools.client.call_service(
             "climate",
             service,
             target={"entity_id": self.thermostat_config.climate_entity},
@@ -215,7 +216,7 @@ class ThermostatModule(BaseModule):
 
         logging.info(f"Setting {self.thermostat_config.climate_entity} to {temp}.")
 
-        await self.client.call_service(
+        await self.tools.client.call_service(
             "climate",
             "set_temperature",
             service_data={"temperature": temp},
@@ -287,5 +288,5 @@ class ThermostatModule(BaseModule):
             f"Assigning new target temperature {temperature} to {self.thermostat_config.climate_entity}"
         )
 
-        Clock.set_schedule(self.climate_config.schedule, temperature)
+        self.tools.clock.set_schedule(self.climate_config.schedule, temperature)
         self.config.save()

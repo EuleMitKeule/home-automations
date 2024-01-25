@@ -5,10 +5,9 @@ from colour import Color
 from tibber import FatalHttpException, Tibber
 
 from home_automations.const import TibberLevel
-from home_automations.helper.client import Client
-from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.config import Config
 from home_automations.modules.base_module import BaseModule
+from home_automations.tools import Tools
 
 
 class TibberModule(BaseModule):
@@ -17,8 +16,12 @@ class TibberModule(BaseModule):
     tibber: Tibber
     last_level: TibberLevel = TibberLevel.UNKNOWN
 
-    def __init__(self, config: Config, client: Client, api: HomeAutomationsApi):
-        super().__init__(config, client, api)
+    def __init__(
+        self,
+        config: Config,
+        tools: Tools,
+    ):
+        super().__init__(config, tools)
 
         self.tibber = Tibber(
             access_token=config.tibber.token,
@@ -52,7 +55,7 @@ class TibberModule(BaseModule):
             color = Color(color_hex)
 
             for entity_id in self.config.tibber.light_entities:
-                await self.client.call_service(
+                await self.tools.client.call_service(
                     "light",
                     "turn_on",
                     service_data={
