@@ -22,6 +22,7 @@ from home_automations.modules.dimmer_module import DimmerModule
 from home_automations.modules.dummy_module import DummyModule
 from home_automations.modules.thermostat_module import ThermostatModule
 from home_automations.modules.tibber_module import TibberModule
+from home_automations.modules.timed_light_module import TimedLightModule
 from home_automations.tools import Tools
 
 
@@ -59,6 +60,10 @@ class HomeAutomations:
             + [
                 DimmerModule(self.config, self.tools, dimmer_config)
                 for dimmer_config in self.config.dimmer_configs
+            ]
+            + [
+                TimedLightModule(self.config, self.tools, timed_light_config)
+                for timed_light_config in self.config.timed_light_configs
             ]
             + [
                 TibberModule(self.config, self.tools),
