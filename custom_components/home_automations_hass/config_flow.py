@@ -1,12 +1,18 @@
 from typing import Any
 
+import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.const import CONF_URL
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN
-from .schemas import SCHEMA_CONFIG_FLOW_USER, SCHEMA_OPTIONS_FLOW_USER
+from .const import (
+    CONF_WASHING_MACHINE_MAC,
+    CONF_WASHING_MACHINE_MANUFACTURER,
+    CONF_WASHING_MACHINE_MODEL,
+    CONF_WASHING_MACHINE_SHELLY_ENTITY_ID,
+    DOMAIN,
+)
 
 
 class HomeAutomationsConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
@@ -23,7 +29,11 @@ class HomeAutomationsConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore[call
         if user_input is None:
             return self.async_show_form(
                 step_id="user",
-                data_schema=SCHEMA_CONFIG_FLOW_USER,
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(CONF_URL): str,
+                    }
+                ),
                 errors=errors,
             )
 
@@ -59,5 +69,32 @@ class OptionsFlowHandler(OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=SCHEMA_OPTIONS_FLOW_USER,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_WASHING_MACHINE_SHELLY_ENTITY_ID,
+                        default=self.config_entry.options.get(
+                            CONF_WASHING_MACHINE_SHELLY_ENTITY_ID, ""
+                        ),
+                    ): str,
+                    vol.Required(
+                        CONF_WASHING_MACHINE_MAC,
+                        default=self.config_entry.options.get(
+                            CONF_WASHING_MACHINE_MAC, ""
+                        ),
+                    ): str,
+                    vol.Required(
+                        CONF_WASHING_MACHINE_MANUFACTURER,
+                        default=self.config_entry.options.get(
+                            CONF_WASHING_MACHINE_MANUFACTURER, ""
+                        ),
+                    ): str,
+                    vol.Required(
+                        CONF_WASHING_MACHINE_MODEL,
+                        default=self.config_entry.options.get(
+                            CONF_WASHING_MACHINE_MODEL, ""
+                        ),
+                    ): str,
+                }
+            ),
         )
