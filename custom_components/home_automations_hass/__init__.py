@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -38,3 +39,21 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Called when an entry is updated."""
 
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Called when an entry is unloaded."""
+
+    unload_ok = all(
+        await asyncio.gather(
+            *[
+                hass.config_entries.async_forward_entry_unload(entry, platform)
+                for platform in PLATFORMS
+            ]
+        )
+    )
+
+    if unload_ok:
+        hass.data.pop(entry.entry_id)
+
+    return unload_ok
