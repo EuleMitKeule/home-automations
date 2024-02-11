@@ -94,16 +94,11 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
         self._attr_name = "Waschmaschine"
         self._attr_unique_id = "waschmaschine"
 
-        mac_address: str | None = self._config_entry.options.get(
-            CONF_WASHING_MACHINE_MAC
-        )
-        manufacturer: str | None = self._config_entry.options.get(
+        mac_address: str = self._config_entry.options.get(CONF_WASHING_MACHINE_MAC)
+        manufacturer: str = self._config_entry.options.get(
             CONF_WASHING_MACHINE_MANUFACTURER
         )
-        model: str | None = self._config_entry.options.get(CONF_WASHING_MACHINE_MODEL)
-
-        if mac_address is None or manufacturer is None or model is None:
-            raise HomeAssistantError("Washing machine options are invalid")
+        model: str = self._config_entry.options.get(CONF_WASHING_MACHINE_MODEL)
 
         self._attr_device_info = DeviceInfo(
             connections={(CONNECTION_NETWORK_MAC, mac_address)},
@@ -116,12 +111,9 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
     def state(self) -> str:
         """Return the state of the sensor."""
 
-        shelly_entity_id: str | None = self._config_entry.options.get(
+        shelly_entity_id: str = self._config_entry.options.get(
             CONF_WASHING_MACHINE_SHELLY_ENTITY_ID
         )
-
-        if shelly_entity_id is None:
-            raise HomeAssistantError("Shelly entity id not set")
 
         state = self.hass.states.get(shelly_entity_id)
 

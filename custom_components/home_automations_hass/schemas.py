@@ -17,9 +17,9 @@ SCHEMA_CONFIG_FLOW_USER = vol.Schema(
 
 SCHEMA_OPTIONS_FLOW_USER = vol.Schema(
     {
-        vol.Required(CONF_WASHING_MACHINE_SHELLY_ENTITY_ID): cv.entity_id,
-        vol.Required(CONF_WASHING_MACHINE_MAC): cv.string,
-        vol.Required(CONF_WASHING_MACHINE_MANUFACTURER): cv.string,
-        vol.Required(CONF_WASHING_MACHINE_MODEL): cv.string,
+        vol.Required(CONF_WASHING_MACHINE_SHELLY_ENTITY_ID, default=""): cv.entity_id,
+        vol.Required(CONF_WASHING_MACHINE_MAC, default=""): cv.string,
+        vol.Required(CONF_WASHING_MACHINE_MANUFACTURER, default=""): cv.string,
+        vol.Required(CONF_WASHING_MACHINE_MODEL, default=""): cv.string,
     }
 )

@@ -8,7 +8,7 @@ from .client import Client
 from .const import DOMAIN
 from .coordinator import Coordinator
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SWITCH, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SWITCH]
 _LOGGER = logging.getLogger(__name__)
 
 
