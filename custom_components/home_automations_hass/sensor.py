@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_entity import BaseEntity
 from .client import Client
-from .const import DOMAIN, WashingMachineState
+from .const import WashingMachineState
 from .coordinator import Coordinator
 
 
@@ -39,7 +39,7 @@ class WashingMachineSensor(BaseEntity, SensorEntity):
 
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_name = "Waschmaschine"
-        self._attr_unique_id = f"{DOMAIN}_{self._client._url}_washing_machine"
+        self._attr_unique_id = "waschmaschine"
         self._attr_device_info = DeviceInfo(
             connections=((CONNECTION_NETWORK_MAC, "08:f9:e0:4e:62:4e")),
             manufacturer="Bosch",

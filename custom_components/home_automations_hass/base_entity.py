@@ -14,23 +14,13 @@ class BaseEntity(CoordinatorEntity):
         self._client = client
         self._coordinator = coordinator
         self._attr_has_entity_name = True
-
-    @property
-    def unique_id(self) -> str:
-        """Return a unique ID."""
-
-        return f"{DOMAIN}_{self._client._url}_{self.name}"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device info."""
-
-        return DeviceInfo(
+        self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._client._url)},
             name="Home Automations",
             manufacturer="Home Automations",
             model="Home Automations",
         )
+        self._attr_unique_id = f"{DOMAIN}_{self._client._url}_{self.name}"
 
     @callback
     def _handle_coordinator_update(self) -> None:
