@@ -51,6 +51,7 @@ class RunningSensor(BaseEntity, BinarySensorEntity):
 
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_name = "Running"
+        self._attr_icon = "mdi:washing-machine"
         self._attr_unique_id = f"{DOMAIN}_{self._client._url}"
 
     @property
