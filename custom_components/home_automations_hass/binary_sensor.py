@@ -6,12 +6,13 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_entity import BaseEntity
 from .client import Client
-from .const import DOMAIN
+from .const import DOMAIN, WashingMachineState
 from .coordinator import Coordinator
 
 
@@ -28,6 +29,7 @@ async def async_setup_entry(
     entities_to_add: list[Entity] = [
         RunningSensor(client, coordinator),
         StateMonitoringSensor(client, coordinator),
+        WashingMachineSensor(client, coordinator),
     ]
 
     async_add_entities(entities_to_add)
@@ -72,3 +74,32 @@ class StateMonitoringSensor(BaseEntity, BinarySensorEntity):
         seconds_since_last_state_change = (now - last_state_changed).total_seconds()
 
         return seconds_since_last_state_change < 60
+
+
+class WashingMachineSensor(BaseEntity, BinarySensorEntity):
+    """Running Sensor."""
+
+    def __init__(self, client: Client, coordinator: Coordinator):
+        super().__init__(client, coordinator)
+
+        self._attr_device_class = BinarySensorDeviceClass.RUNNING
+        self._attr_name = "Waschmaschine"
+        self._attr_unique_id = "waschmaschine"
+        self._attr_device_info = DeviceInfo(
+            connections={(CONNECTION_NETWORK_MAC, "08:f9:e0:4e:62:4e")},
+            manufacturer="Bosch",
+            model="WAN282V8",
+            name="Waschmaschine",
+        )
+
+    @property
+    def state(self) -> str:
+        """Return the state of the sensor."""
+
+        state = self.hass.states.get("sensor.waschmaschine_power")
+        power = int(state.state)
+
+        if power > 0:
+            return WashingMachineState.RUNNING
+
+        return WashingMachineState.OFF
