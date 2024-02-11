@@ -41,7 +41,7 @@ class WashingMachineSensor(BaseEntity, SensorEntity):
         self._attr_name = "Waschmaschine"
         self._attr_unique_id = "waschmaschine"
         self._attr_device_info = DeviceInfo(
-            connections=((CONNECTION_NETWORK_MAC, "08:f9:e0:4e:62:4e")),
+            connections={(CONNECTION_NETWORK_MAC, "08:f9:e0:4e:62:4e")},
             manufacturer="Bosch",
             model="WAN282V8",
             name="Waschmaschine",
