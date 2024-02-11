@@ -15,11 +15,14 @@
       "init": {
         "title": "Home Automations Options",
         "data": {
-          "": "Scan interval in seconds",
           "washing_machine_shelly_entity_id": "Waschmaschine Shelly Entity ID",
-          "washing_machine_mac": "MAC Address",
+          "washing_machine_mac": "Waschmaschine MAC-Addresse",
           "washing_machine_manufacturer": "Waschmaschine Hersteller",
-          "washing_machine_model": "Waschmaschine Modell"
+          "washing_machine_model": "Waschmaschine Modell",
+          "dryer_shelly_entity_id": "Trockner Shelly Entity ID",
+          "dryer_mac": "Trockner MAC-Addresse",
+          "dryer_manufacturer": "Trockner Hersteller",
+          "dryer_model": "Trockner Modell"
         }
       }
     }

@@ -14,12 +14,15 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .base_entity import BaseEntity
 from .client import Client
 from .const import (
+    CONF_DRYER_MAC,
+    CONF_DRYER_MANUFACTURER,
+    CONF_DRYER_MODEL,
+    CONF_DRYER_SHELLY_ENTITY_ID,
     CONF_WASHING_MACHINE_MAC,
     CONF_WASHING_MACHINE_MANUFACTURER,
     CONF_WASHING_MACHINE_MODEL,
     CONF_WASHING_MACHINE_SHELLY_ENTITY_ID,
     DOMAIN,
-    WashingMachineState,
 )
 from .coordinator import Coordinator
 
@@ -38,6 +41,7 @@ async def async_setup_entry(
         RunningSensor(config_entry, client, coordinator),
         StateMonitoringSensor(config_entry, client, coordinator),
         WashingMachineSensor(config_entry, client, coordinator),
+        DryerSensor(config_entry, client, coordinator),
     ]
 
     async_add_entities(entities_to_add)
@@ -51,7 +55,6 @@ class RunningSensor(BaseEntity, BinarySensorEntity):
 
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_name = "Running"
-        self._attr_icon = "mdi:washing-machine"
         self._attr_unique_id = f"{DOMAIN}_{self._client._url}"
 
     @property
@@ -124,6 +127,48 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
             raise HomeAssistantError(f"Invalid power value: {state.state}")
 
         if power > 0:
-            return WashingMachineState.RUNNING
+            return "on"
 
-        return WashingMachineState.OFF
+        return "off"
+
+
+class DryerSensor(BaseEntity, BinarySensorEntity):
+    """Running Sensor."""
+
+    def __init__(self, entry: ConfigEntry, client: Client, coordinator: Coordinator):
+        super().__init__(entry, client, coordinator)
+
+        self._attr_device_class = BinarySensorDeviceClass.RUNNING
+        self._attr_name = "Trockner"
+        self._attr_unique_id = "trockner"
+
+        mac_address: str = self._config_entry.options.get(CONF_DRYER_MAC)
+        manufacturer: str = self._config_entry.options.get(CONF_DRYER_MANUFACTURER)
+        model: str = self._config_entry.options.get(CONF_DRYER_MODEL)
+
+        self._attr_device_info = DeviceInfo(
+            connections={(CONNECTION_NETWORK_MAC, mac_address)},
+            manufacturer=manufacturer,
+            model=model,
+            name="Trockner",
+        )
+
+    @property
+    def state(self) -> str:
+        """Return the state of the sensor."""
+
+        shelly_entity_id: str = self._config_entry.options.get(
+            CONF_DRYER_SHELLY_ENTITY_ID
+        )
+
+        state = self.hass.states.get(shelly_entity_id)
+
+        try:
+            power = float(state.state)
+        except ValueError:
+            raise HomeAssistantError(f"Invalid power value: {state.state}")
+
+        if power > 0:
+            return "on"
+
+        return "off"

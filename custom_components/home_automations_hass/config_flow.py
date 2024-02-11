@@ -7,6 +7,10 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
+    CONF_DRYER_MAC,
+    CONF_DRYER_MANUFACTURER,
+    CONF_DRYER_MODEL,
+    CONF_DRYER_SHELLY_ENTITY_ID,
     CONF_WASHING_MACHINE_MAC,
     CONF_WASHING_MACHINE_MANUFACTURER,
     CONF_WASHING_MACHINE_MODEL,
@@ -94,6 +98,26 @@ class OptionsFlowHandler(OptionsFlow):
                         default=self.config_entry.options.get(
                             CONF_WASHING_MACHINE_MODEL, ""
                         ),
+                    ): str,
+                    vol.Required(
+                        CONF_DRYER_SHELLY_ENTITY_ID,
+                        default=self.config_entry.options.get(
+                            CONF_DRYER_SHELLY_ENTITY_ID, ""
+                        ),
+                    ): str,
+                    vol.Required(
+                        CONF_DRYER_MAC,
+                        default=self.config_entry.options.get(CONF_DRYER_MAC, ""),
+                    ): str,
+                    vol.Required(
+                        CONF_DRYER_MANUFACTURER,
+                        default=self.config_entry.options.get(
+                            CONF_DRYER_MANUFACTURER, ""
+                        ),
+                    ): str,
+                    vol.Required(
+                        CONF_DRYER_MODEL,
+                        default=self.config_entry.options.get(CONF_DRYER_MODEL, ""),
                     ): str,
                 }
             ),
