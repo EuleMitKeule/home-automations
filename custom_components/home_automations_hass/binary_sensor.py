@@ -118,7 +118,7 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
         state = self.hass.states.get(shelly_entity_id)
 
         try:
-            power = int(state.state)
+            power = float(state.state)
         except ValueError:
             raise HomeAssistantError(f"Invalid power value: {state.state}")
 
