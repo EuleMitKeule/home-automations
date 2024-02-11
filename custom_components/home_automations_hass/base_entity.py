@@ -1,3 +1,4 @@
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -8,9 +9,10 @@ from .coordinator import Coordinator
 
 
 class BaseEntity(CoordinatorEntity):
-    def __init__(self, client: Client, coordinator: Coordinator):
+    def __init__(self, entry: ConfigEntry, client: Client, coordinator: Coordinator):
         super().__init__(coordinator)
 
+        self._config_entry = entry
         self._client = client
         self._coordinator = coordinator
         self._attr_has_entity_name = True

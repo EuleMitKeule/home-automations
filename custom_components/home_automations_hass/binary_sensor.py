@@ -6,13 +6,21 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_entity import BaseEntity
 from .client import Client
-from .const import DOMAIN, WashingMachineState
+from .const import (
+    CONF_WASHING_MACHINE_MAC,
+    CONF_WASHING_MACHINE_MANUFACTURER,
+    CONF_WASHING_MACHINE_MODEL,
+    CONF_WASHING_MACHINE_SHELLY_ENTITY_ID,
+    DOMAIN,
+    WashingMachineState,
+)
 from .coordinator import Coordinator
 
 
@@ -27,9 +35,9 @@ async def async_setup_entry(
     coordinator = hass.data[config_entry.entry_id]["coordinator"]
 
     entities_to_add: list[Entity] = [
-        RunningSensor(client, coordinator),
-        StateMonitoringSensor(client, coordinator),
-        WashingMachineSensor(client, coordinator),
+        RunningSensor(config_entry, client, coordinator),
+        StateMonitoringSensor(config_entry, client, coordinator),
+        WashingMachineSensor(config_entry, client, coordinator),
     ]
 
     async_add_entities(entities_to_add)
@@ -38,8 +46,8 @@ async def async_setup_entry(
 class RunningSensor(BaseEntity, BinarySensorEntity):
     """Running Sensor."""
 
-    def __init__(self, client: Client, coordinator: Coordinator):
-        super().__init__(client, coordinator)
+    def __init__(self, entry: ConfigEntry, client: Client, coordinator: Coordinator):
+        super().__init__(entry, client, coordinator)
 
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_name = "Running"
@@ -55,8 +63,8 @@ class RunningSensor(BaseEntity, BinarySensorEntity):
 class StateMonitoringSensor(BaseEntity, BinarySensorEntity):
     """State Monitoring Sensor."""
 
-    def __init__(self, client: Client, coordinator: Coordinator):
-        super().__init__(client, coordinator)
+    def __init__(self, entry: ConfigEntry, client: Client, coordinator: Coordinator):
+        super().__init__(entry, client, coordinator)
 
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_name = "State Monitoring"
@@ -79,16 +87,28 @@ class StateMonitoringSensor(BaseEntity, BinarySensorEntity):
 class WashingMachineSensor(BaseEntity, BinarySensorEntity):
     """Running Sensor."""
 
-    def __init__(self, client: Client, coordinator: Coordinator):
-        super().__init__(client, coordinator)
+    def __init__(self, entry: ConfigEntry, client: Client, coordinator: Coordinator):
+        super().__init__(entry, client, coordinator)
 
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_name = "Waschmaschine"
         self._attr_unique_id = "waschmaschine"
+
+        mac_address: str | None = self._config_entry.options.get(
+            CONF_WASHING_MACHINE_MAC
+        )
+        manufacturer: str | None = self._config_entry.options.get(
+            CONF_WASHING_MACHINE_MANUFACTURER
+        )
+        model: str | None = self._config_entry.options.get(CONF_WASHING_MACHINE_MODEL)
+
+        if mac_address is None or manufacturer is None or model is None:
+            raise HomeAssistantError("Washing machine options are invalid")
+
         self._attr_device_info = DeviceInfo(
-            connections={(CONNECTION_NETWORK_MAC, "08:f9:e0:4e:62:4e")},
-            manufacturer="Bosch",
-            model="WAN282V8",
+            connections={(CONNECTION_NETWORK_MAC, mac_address)},
+            manufacturer=manufacturer,
+            model=model,
             name="Waschmaschine",
         )
 
@@ -96,8 +116,19 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
     def state(self) -> str:
         """Return the state of the sensor."""
 
-        state = self.hass.states.get("sensor.waschmaschine_power")
-        power = int(state.state)
+        shelly_entity_id: str | None = self._config_entry.options.get(
+            CONF_WASHING_MACHINE_SHELLY_ENTITY_ID
+        )
+
+        if shelly_entity_id is None:
+            raise HomeAssistantError("Shelly entity id not set")
+
+        state = self.hass.states.get(shelly_entity_id)
+
+        try:
+            power = int(state.state)
+        except ValueError:
+            raise HomeAssistantError(f"Invalid power value: {state.state}")
 
         if power > 0:
             return WashingMachineState.RUNNING

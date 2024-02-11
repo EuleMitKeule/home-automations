@@ -21,7 +21,7 @@ async def async_setup_entry(
     coordinator = hass.data[config_entry.entry_id]["coordinator"]
 
     entities_to_add: list[Entity] = [
-        DummySwitch(client, coordinator),
+        DummySwitch(config_entry, client, coordinator),
     ]
 
     async_add_entities(entities_to_add)
@@ -30,8 +30,8 @@ async def async_setup_entry(
 class DummySwitch(BaseEntity, SwitchEntity):
     """Dummy Switch."""
 
-    def __init__(self, client: Client, coordinator: Coordinator):
-        super().__init__(client, coordinator)
+    def __init__(self, entry: ConfigEntry, client: Client, coordinator: Coordinator):
+        super().__init__(entry, client, coordinator)
 
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_name = "Dummy"
