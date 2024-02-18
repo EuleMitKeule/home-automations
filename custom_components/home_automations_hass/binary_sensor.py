@@ -121,6 +121,9 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
 
         state = self.hass.states.get(shelly_entity_id)
 
+        if state == "unavailable" or state is None:
+            return "off"
+
         try:
             power = float(state.state)
         except ValueError:
@@ -162,6 +165,9 @@ class DryerSensor(BaseEntity, BinarySensorEntity):
         )
 
         state = self.hass.states.get(shelly_entity_id)
+
+        if state == "unavailable" or state is None:
+            return "off"
 
         try:
             power = float(state.state)
