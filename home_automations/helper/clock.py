@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any, Callable
 
 import pytz
@@ -68,6 +68,12 @@ class Clock:
 
         for task, interval, last_run in invoked_tasks:
             self.scheduled_tasks.append((task, interval, datetime.now()))
+
+    def current_datetime(self) -> datetime:
+        return datetime.now(self.tz)
+
+    def current_date(self) -> date:
+        return datetime.now(self.tz).date()
 
     def current_time(self) -> time:
         return datetime.now(self.tz).time()

@@ -85,7 +85,26 @@ class HomeAssistantClient:
                 raise
             raise NotFoundAgainError(entity_id)
 
+        if state is None:
+            if entity_id not in self.unknown_entities:
+                self.unknown_entities.add(entity_id)
+                raise
+            raise NotFoundAgainError(entity_id)
+
         return state
+
+    async def get_attribute(self, entity_id: str, attribute: str) -> str:
+        """Return the state of an entity."""
+
+        try:
+            state = await self.client.get_state(entity_id)
+        except NotFoundError:
+            if entity_id not in self.unknown_entities:
+                self.unknown_entities.add(entity_id)
+                raise
+            raise NotFoundAgainError(entity_id)
+
+        return str(state.attributes.get(attribute, None))
 
     async def call_service(
         self,

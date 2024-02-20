@@ -14,12 +14,14 @@ from hass_client.models import Event
 
 from home_automations.helper.client import HomeAssistantClient
 from home_automations.helper.clock import Clock
+from home_automations.helper.day_state import DayStateResolver
 from home_automations.home_automations_api import HomeAutomationsApi
 from home_automations.models.config import Config
 from home_automations.models.exceptions import NotFoundAgainError, ServiceTimeoutError
 from home_automations.modules.base_module import BaseModule
 from home_automations.modules.dimmer_module import DimmerModule
 from home_automations.modules.dummy_module import DummyModule
+from home_automations.modules.motion_light_module import MotionLightModule
 from home_automations.modules.thermostat_module import ThermostatModule
 from home_automations.modules.tibber_module import TibberModule
 from home_automations.modules.timed_light_module import TimedLightModule
@@ -38,10 +40,17 @@ class HomeAutomations:
         self.loop.set_exception_handler(self.handle_exception_in_loop)
 
         self.config: Config = fastapi.state.config
+
+        client = HomeAssistantClient(self.config)
+        clock = Clock(self.config)
+        api = HomeAutomationsApi(fastapi)
+        day_state = DayStateResolver(clock, client)
         self.tools = Tools(
-            client=HomeAssistantClient(self.config),
-            clock=Clock(self.config),
-            api=HomeAutomationsApi(self.fastapi),
+            loop=self.loop,
+            client=client,
+            clock=clock,
+            api=api,
+            day_state_resolver=day_state,
         )
 
         self.tools.client.register_on_connection(self.on_connection)
@@ -68,6 +77,10 @@ class HomeAutomations:
             + [
                 TibberModule(self.config, self.tools),
                 DummyModule(self.config, self.tools),
+            ]
+            + [
+                MotionLightModule(self.config, self.tools, motion_light_config)
+                for motion_light_config in self.config.motion_light_configs
             ]
         )
 
