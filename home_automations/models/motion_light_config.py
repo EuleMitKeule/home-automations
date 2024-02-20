@@ -57,3 +57,4 @@ class MotionLightConfig:
     states: list[ExtraMotionLightState] = field(default_factory=list)
     on_delay: float = 0
     off_delay: float = 0
+    off_override_time: float = 0

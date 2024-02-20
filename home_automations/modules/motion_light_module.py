@@ -24,13 +24,20 @@ class MotionLightModule(BaseModule):
         super().__init__(config, tools)
 
         self.motion_light_config: MotionLightConfig = motion_light_config
+        self.current_task: asyncio.Task | None = None
+
+        self.last_motion: datetime = self.tools.clock.current_datetime()
         self.last_changed: datetime = self.tools.clock.current_datetime() + timedelta(
             days=-1
         )
-        self.last_motion: datetime = self.tools.clock.current_datetime()
+        self.manual_off_time: datetime = (
+            self.tools.clock.current_datetime() + timedelta(days=-1)
+        )
+
+        self.is_manual_off: bool = False
+
         self.ignore_next_motion: bool = False
         self.ignore_motion: bool = False
-        self.current_task: asyncio.Task | None = None
 
         for motion_entity in self.motion_light_config.motion_entities:
             self.register_state_changed(self.on_motion_changed, motion_entity)
@@ -62,6 +69,21 @@ class MotionLightModule(BaseModule):
             if state.state != "off":
                 _LOGGER.warning(
                     f"[{self.motion_light_config.name}] Unknown state {state.state} for motion on entity {motion_on_entity}"
+                )
+
+        return False
+
+    @property
+    async def is_any_motion_off(self) -> bool:
+        for motion_off_entity in self.motion_light_config.motion_entities:
+            state = await self.tools.client.get_state(motion_off_entity)
+
+            if state.state == "off":
+                return True
+
+            if state.state != "on":
+                _LOGGER.warning(
+                    f"[{self.motion_light_config.name}] Unknown state {state.state} for motion off entity {motion_off_entity}"
                 )
 
         return False
@@ -118,19 +140,19 @@ class MotionLightModule(BaseModule):
             and command != "attribute_updated"
             and command != "checkin"
         ):
-            self.last_changed = self.tools.clock.current_datetime()
+            await self.on_user_changed()
 
         match command:
             case "off":
-                await self.on_off()
+                await self.on_user_off()
             case "on":
-                await self.on_on()
+                await self.on_user_on()
             case "press":
-                await self.on_press()
+                await self.on_user_on()
             case "hold":
-                await self.on_hold()
+                await self.on_user_on()
             case "release":
-                await self.on_release()
+                await self.on_user_on()
 
     async def on_motion_on(self):
         _LOGGER.debug("[{self.motion_light_config.name}] Motion on")
@@ -139,12 +161,26 @@ class MotionLightModule(BaseModule):
             _LOGGER.debug("[{self.motion_light_config.name}] Cancelling off task")
             self.current_task.cancel()
 
-        if self.ignore_next_motion:
-            self.ignore_next_motion = False
+        manual_off_time_difference = (
+            self.tools.clock.current_datetime() - self.manual_off_time
+        )
+
+        if (
+            manual_off_time_difference.total_seconds()
+            < self.motion_light_config.off_override_time
+        ):
+            _LOGGER.debug(
+                f"[{self.motion_light_config.name}] Manual off override, not turning on"
+            )
+            self.is_manual_off = True
             return
 
-        if self.ignore_motion:
-            return
+        # if self.ignore_next_motion:
+        #     self.ignore_next_motion = False
+        #     return
+
+        # if self.ignore_motion:
+        #     return
 
         if not await self.all_lights_off:
             _LOGGER.debug("[{self.motion_light_config.name}] Lights already on")
@@ -174,6 +210,10 @@ class MotionLightModule(BaseModule):
             _LOGGER.debug("[{self.motion_light_config.name}] Cancelling on task")
             self.current_task.cancel()
 
+        if self.is_manual_off:
+            self.is_manual_off = False
+            self.manual_off_time = self.tools.clock.current_datetime()
+
         if await self.is_any_motion_on:
             return
 
@@ -196,17 +236,27 @@ class MotionLightModule(BaseModule):
 
         self.current_task = self.tools.loop.create_task(turn_off())
 
-    async def on_motion_on_changed(
-        self, event: Event, old_state: State, new_state: State
-    ):
-        if new_state.state == "on":
-            return await self.on_motion_changed(event, old_state, new_state)
+    async def on_user_changed(self):
+        self.last_changed = self.tools.clock.current_datetime()
 
-    async def on_motion_off_changed(
-        self, event: Event, old_state: State, new_state: State
-    ):
-        if new_state.state == "off":
-            return await self.on_motion_changed(event, old_state, new_state)
+    async def on_user_on(self):
+        pass
+        # self.ignore_motion = False
+        # self.last_motion = self.last_changed + timedelta(seconds=1)
+        # self.ignore_next_motion = False
+
+    async def on_user_off(self):
+        self.is_manual_off = True
+
+        if await self.is_any_motion_off:
+            self.is_manual_off = False
+            self.manual_off_time = self.tools.clock.current_datetime()
+
+        # self.ignore_motion = True
+
+        # if await self.is_motion_activated:
+        #     self.ignore_motion = True
+        #     # self.ignore_next_motion = True
 
     async def on_motion_changed(self, event: Event, old_state: State, new_state: State):
         if not await self.is_switch_on:
@@ -244,17 +294,10 @@ class MotionLightModule(BaseModule):
             f"[{self.motion_light_config.name}] Light {new_state.entity_id} changed by user from {old_state.state} to {new_state.state}"
         )
 
-        if (
-            old_state.state != new_state.state
-            and new_state.state == "off"
-            and await self.is_motion_activated
-        ):
-            self.ignore_motion = True
-            # self.ignore_next_motion = True
+        if old_state.state != new_state.state and new_state.state == "off":
+            await self.on_user_off()
 
-        self.last_changed = self.tools.clock.current_datetime()
+        await self.on_user_changed()
 
         if old_state.state != new_state.state and new_state.state == "on":
-            self.ignore_motion = False
-            self.last_motion = self.last_changed + timedelta(seconds=1)
-            # self.ignore_next_motion = False
+            await self.on_user_on()
