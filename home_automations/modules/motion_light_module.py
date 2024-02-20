@@ -1,3 +1,5 @@
+"""Motion light module."""
+
 import asyncio
 import logging
 from datetime import datetime, timedelta
