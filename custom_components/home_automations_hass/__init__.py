@@ -18,7 +18,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     url = entry.data[CONF_URL]
 
-    client = Client(_LOGGER, url)
+    client = Client(hass, _LOGGER, url)
     coordinator = Coordinator(hass, _LOGGER, client)
 
     hass.data.setdefault(DOMAIN, {})
