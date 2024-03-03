@@ -1,8 +1,6 @@
 from abc import ABC
 from datetime import time
 
-from homeassistant.exceptions import HomeAssistantError
-
 from home_automations.helper.client import HomeAssistantClient
 from home_automations.helper.clock import Clock
 from home_automations.models.motion_light_config import MotionLightConfig
@@ -15,7 +13,7 @@ class DayState(ABC):
         self._scene = scene
 
     @property
-    async def is_fulfilled(self) -> bool:
+    async def is_fulfilled(self) -> bool | None:
         """Return whether the day state is fulfilled."""
 
         raise NotImplementedError
@@ -37,7 +35,7 @@ class DefaultDayState(DayState):
     """Class for default day state."""
 
     @property
-    async def is_fulfilled(self) -> bool:
+    async def is_fulfilled(self) -> bool | None:
         return True
 
     @property
@@ -56,17 +54,22 @@ class ElevationDayState(DayState):
         self._elevation = elevation
 
     @property
-    async def _sun_elevation(self) -> float:
+    async def _sun_elevation(self) -> float | None:
         result = await self._client.get_attribute("sun.sun", attribute="elevation")
 
         try:
             return float(result)
         except ValueError:
-            raise HomeAssistantError(f"Invalid elevation: {result}")
+            return None
 
     @property
-    async def is_fulfilled(self) -> bool:
-        return await self._sun_elevation < self._elevation
+    async def is_fulfilled(self) -> bool | None:
+        elevation = await self._sun_elevation
+
+        if elevation is None:
+            return None
+
+        return elevation < self._elevation
 
     @property
     def sort_key(self) -> float:
@@ -85,7 +88,7 @@ class TimeDayState(DayState):
         self._to_time = to_time
 
     @property
-    async def is_fulfilled(self) -> bool:
+    async def is_fulfilled(self) -> bool | None:
         now = self._clock.current_time()
 
         return self._from_time <= now <= self._to_time
