@@ -10,6 +10,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util.dt import get_time_zone
 
 from .base_entity import BaseEntity
 from .client import Client
@@ -81,7 +82,7 @@ class StateMonitoringSensor(BaseEntity, BinarySensorEntity):
             return False
 
         last_state_changed = self._coordinator.status.last_state_changed
-        now = datetime.now()
+        now = datetime.now(get_time_zone(self.hass.config.time_zone))
 
         seconds_since_last_state_change = (now - last_state_changed).total_seconds()
 
