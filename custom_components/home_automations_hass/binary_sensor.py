@@ -126,7 +126,7 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
 
         try:
             power = float(state.state)
-        except ValueError:
+        except (ValueError, TypeError):
             raise HomeAssistantError(f"Invalid power value: {state.state}")
 
         if power > 0:
@@ -171,7 +171,7 @@ class DryerSensor(BaseEntity, BinarySensorEntity):
 
         try:
             power = float(state.state)
-        except ValueError:
+        except (ValueError, TypeError):
             raise HomeAssistantError(f"Invalid power value: {state.state}")
 
         if power > 0:

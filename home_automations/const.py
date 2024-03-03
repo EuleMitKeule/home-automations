@@ -30,6 +30,7 @@ class ThermostatState(str, Enum):
     HEAT = "heat"
     AUTO = "auto"
     UNAVAILABLE = "unavailable"
+    UNKNOWN = "unknown"
 
 
 class TibberLevel(StrEnum):

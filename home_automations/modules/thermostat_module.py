@@ -57,7 +57,7 @@ class ThermostatModule(BaseModule):
 
         try:
             return float(state.state)
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
     @property
@@ -134,7 +134,7 @@ class ThermostatModule(BaseModule):
 
         try:
             return float(state.attributes["temperature"])
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
     @property
@@ -146,7 +146,7 @@ class ThermostatModule(BaseModule):
 
         try:
             return float(state.attributes["current_temperature"])
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
     @property
@@ -191,7 +191,12 @@ class ThermostatModule(BaseModule):
             return
 
         current_thermostat_state = await self.current_thermostat_state
-        if current_thermostat_state == state:
+
+        if current_thermostat_state in (
+            ThermostatState.UNAVAILABLE,
+            ThermostatState.UNKNOWN,
+            state,
+        ):
             return
 
         logging.info(f"Selecting thermostat mode {state.value}.")

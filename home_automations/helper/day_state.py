@@ -59,7 +59,7 @@ class ElevationDayState(DayState):
 
         try:
             return float(result)
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
     @property
