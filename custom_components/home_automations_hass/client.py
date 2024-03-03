@@ -37,6 +37,7 @@ class Client:
                 )
                 tzinfo = get_time_zone(self._hass.config.time_zone)
                 last_state_changed = last_state_changed.replace(tzinfo=tzinfo)
+
                 return Status(last_state_changed=last_state_changed)
         except TimeoutError:
             self._logger.error("Timeout")

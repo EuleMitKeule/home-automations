@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from homeassistant.components.binary_sensor import (
@@ -26,6 +27,8 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import Coordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -83,6 +86,9 @@ class StateMonitoringSensor(BaseEntity, BinarySensorEntity):
 
         last_state_changed = self._coordinator.status.last_state_changed
         now = datetime.now(get_time_zone(self.hass.config.time_zone))
+
+        _LOGGER.debug(f"now: {now}")
+        _LOGGER.debug(f"last_state_changed: {last_state_changed}")
 
         seconds_since_last_state_change = (now - last_state_changed).total_seconds()
 
