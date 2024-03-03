@@ -1,6 +1,8 @@
 from abc import ABC
 from datetime import time
 
+from homeassistant.exceptions import HomeAssistantError
+
 from home_automations.helper.client import HomeAssistantClient
 from home_automations.helper.clock import Clock
 from home_automations.models.motion_light_config import MotionLightConfig
@@ -57,7 +59,10 @@ class ElevationDayState(DayState):
     async def _sun_elevation(self) -> float:
         result = await self._client.get_attribute("sun.sun", attribute="elevation")
 
-        return float(result)
+        try:
+            return float(result)
+        except ValueError:
+            raise HomeAssistantError(f"Invalid elevation: {result}")
 
     @property
     async def is_fulfilled(self) -> bool:

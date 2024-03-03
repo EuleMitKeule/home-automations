@@ -132,7 +132,10 @@ class ThermostatModule(BaseModule):
         if "temperature" not in state.attributes:
             return None
 
-        return float(state.attributes["temperature"])
+        try:
+            return float(state.attributes["temperature"])
+        except ValueError:
+            return None
 
     @property
     async def current_thermostat_temp(self) -> float | None:
@@ -141,7 +144,10 @@ class ThermostatModule(BaseModule):
         if "current_temperature" not in state.attributes:
             return None
 
-        return float(state.attributes["current_temperature"])
+        try:
+            return float(state.attributes["current_temperature"])
+        except ValueError:
+            return None
 
     @property
     async def target_thermostat_temp(self) -> float | None:
