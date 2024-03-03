@@ -7,7 +7,6 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -87,9 +86,6 @@ class StateMonitoringSensor(BaseEntity, BinarySensorEntity):
         last_state_changed = self._coordinator.status.last_state_changed
         now = datetime.now(get_time_zone(self.hass.config.time_zone))
 
-        _LOGGER.debug(f"now: {now}")
-        _LOGGER.debug(f"last_state_changed: {last_state_changed}")
-
         seconds_since_last_state_change = (now - last_state_changed).total_seconds()
 
         return seconds_since_last_state_change < 60
@@ -119,7 +115,7 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
         )
 
     @property
-    def state(self) -> str:
+    def state(self) -> str | None:
         """Return the state of the sensor."""
 
         shelly_entity_id: str = self._config_entry.options.get(
@@ -134,7 +130,7 @@ class WashingMachineSensor(BaseEntity, BinarySensorEntity):
         try:
             power = float(state.state)
         except (ValueError, TypeError):
-            raise HomeAssistantError(f"Invalid power value: {state.state}")
+            return None
 
         if power > 0:
             return "on"
@@ -164,7 +160,7 @@ class DryerSensor(BaseEntity, BinarySensorEntity):
         )
 
     @property
-    def state(self) -> str:
+    def state(self) -> str | None:
         """Return the state of the sensor."""
 
         shelly_entity_id: str = self._config_entry.options.get(
@@ -179,7 +175,7 @@ class DryerSensor(BaseEntity, BinarySensorEntity):
         try:
             power = float(state.state)
         except (ValueError, TypeError):
-            raise HomeAssistantError(f"Invalid power value: {state.state}")
+            return None
 
         if power > 0:
             return "on"
