@@ -155,10 +155,10 @@ class MotionLightModule(BaseModule):
                 await self.on_user_on()
 
     async def on_motion_on(self):
-        _LOGGER.debug("[{self.motion_light_config.name}] Motion on")
+        _LOGGER.debug(f"[{self.motion_light_config.name}] Motion on")
 
         if self.current_task is not None and not self.current_task.done():
-            _LOGGER.debug("[{self.motion_light_config.name}] Cancelling off task")
+            _LOGGER.debug(f"[{self.motion_light_config.name}] Cancelling off task")
             self.current_task.cancel()
 
         manual_off_time_difference = (
@@ -183,7 +183,7 @@ class MotionLightModule(BaseModule):
         #     return
 
         if not await self.all_lights_off:
-            _LOGGER.debug("[{self.motion_light_config.name}] Lights already on")
+            _LOGGER.debug(f"[{self.motion_light_config.name}] Lights already on")
             return
 
         scene = await self.current_scene
@@ -204,10 +204,10 @@ class MotionLightModule(BaseModule):
         self.last_motion = self.tools.clock.current_datetime()
 
     async def on_motion_off(self):
-        _LOGGER.debug("[{self.motion_light_config.name}] Motion off")
+        _LOGGER.debug(f"[{self.motion_light_config.name}] Motion off")
 
         if self.current_task is not None and not self.current_task.done():
-            _LOGGER.debug("[{self.motion_light_config.name}] Cancelling on task")
+            _LOGGER.debug(f"[{self.motion_light_config.name}] Cancelling on task")
             self.current_task.cancel()
 
         if self.is_manual_off:
@@ -221,7 +221,7 @@ class MotionLightModule(BaseModule):
 
         if time_difference.total_seconds() > 0:
             _LOGGER.debug(
-                "[{self.motion_light_config.name}] Light changed by user, not turning off"
+                f"[{self.motion_light_config.name}] Light changed by user, not turning off"
             )
             return
 
@@ -264,6 +264,13 @@ class MotionLightModule(BaseModule):
 
         if old_state.state == new_state.state:
             return
+
+        _LOGGER.debug(
+            "[%s] Motion changed from %s to %s",
+            self.motion_light_config.name,
+            old_state.state,
+            new_state.state,
+        )
 
         if new_state.state == "on":
             await self.on_motion_on()
