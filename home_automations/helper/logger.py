@@ -30,7 +30,7 @@ class Logger(ABC):
             ],
         )
 
-        logging.getLogger("apscheduler.executors.default").disabled = True
-        logging.getLogger("apscheduler.executors.default").propagate = False
-        logging.getLogger("apscheduler.scheduler").propagate = False
+        logging.getLogger("tibber").propagate = False
+        logging.getLogger("tibber.response_handler").propagate = False
+        logging.getLogger("asyncio").propagate = False
         logging.getLogger("hass_client").propagate = False

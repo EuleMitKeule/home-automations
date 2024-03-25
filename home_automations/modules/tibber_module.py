@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from aiohttp import ClientConnectorError
 from colour import Color
@@ -27,6 +28,8 @@ class TibberModule(BaseModule):
             access_token=config.tibber.token,
             user_agent="Home Automations",
         )
+
+        self.tools.clock.register_task(self.on_update, timedelta(seconds=60))
 
     async def on_update(self):
         try:
