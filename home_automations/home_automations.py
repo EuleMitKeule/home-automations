@@ -22,6 +22,7 @@ from home_automations.modules.base_module import BaseModule
 from home_automations.modules.dimmer_module import DimmerModule
 from home_automations.modules.dummy_module import DummyModule
 from home_automations.modules.motion_light_module import MotionLightModule
+from home_automations.modules.sensor_notify_module import SensorNotifyModule
 from home_automations.modules.thermostat_module import ThermostatModule
 from home_automations.modules.tibber_module import TibberModule
 from home_automations.modules.timed_light_module import TimedLightModule
@@ -81,6 +82,10 @@ class HomeAutomations:
             + [
                 MotionLightModule(self.config, self.tools, motion_light_config)
                 for motion_light_config in self.config.motion_light_configs
+            ]
+            + [
+                SensorNotifyModule(self.config, self.tools, sensor_notify_config)
+                for sensor_notify_config in self.config.sensor_notify_configs
             ]
         )
 

@@ -12,6 +12,7 @@ from home_automations.models.dimmer_config import DimmerConfig
 from home_automations.models.homeassistant_config import HomeAssistantConfig
 from home_automations.models.logging_config import LoggingConfig
 from home_automations.models.motion_light_config import MotionLightConfig
+from home_automations.models.sensor_notify_config import SensorNotifyConfig
 from home_automations.models.tibber_config import TibberConfig
 from home_automations.models.timed_light_config import TimedLightConfig
 
@@ -32,6 +33,7 @@ class Config:
     dimmer_configs: list[DimmerConfig] = field(default_factory=list)
     timed_light_configs: list[TimedLightConfig] = field(default_factory=list)
     motion_light_configs: list[MotionLightConfig] = field(default_factory=list)
+    sensor_notify_configs: list[SensorNotifyConfig] = field(default_factory=list)
 
     @classmethod
     def load(cls, file_path: Path) -> Optional["Config"]:
