@@ -2090,7 +2090,7 @@ aiohttp = "^3.9.1"
 type = "git"
 url = "https://github.com/EuleMitKeule/python-hass-client"
 reference = "master"
-resolved_reference = "0e8521808d94a3c03179cd897d3d83af1bb2507f"
+resolved_reference = "c6a68707d2020877f05fddd1cc538a02327c6196"
 
 [[package]]
 name = "python-slugify"
