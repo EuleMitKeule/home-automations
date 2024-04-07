@@ -2,6 +2,7 @@ import asyncio
 from datetime import date, datetime, time, timedelta
 from typing import Any, Callable
 
+import dateutil.parser
 import pytz
 from pytz.tzinfo import BaseTzInfo
 
@@ -99,6 +100,15 @@ class Clock:
         parsed_time = datetime.strptime(time_string, format_string).time()
 
         return parsed_time
+
+    def parse_datetime(self, datetime_string: str) -> datetime:
+        parsed_datetime = dateutil.parser.parse(
+            datetime_string, fuzzy=True, ignoretz=True
+        )
+
+        parsed_datetime = parsed_datetime.replace(tzinfo=self.tz)
+
+        return parsed_datetime
 
     def resolve_schedule(self, schedule: dict[str, Any]) -> Any:
         """Return the maximum value reached in the schedule."""

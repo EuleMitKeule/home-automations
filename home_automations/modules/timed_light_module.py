@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from hass_client.models import Event, State
 
@@ -101,11 +102,13 @@ class TimedLightModule(BaseModule, ClockEvents):
         if self.timed_light_config.off_time is None:
             return
 
-        current_time = self.tools.clock.current_time()
-        previous_time = current_time.replace(
-            minute=current_time.minute - 1 if current_time.minute > 0 else 59
-        )
-        off_time = self.tools.clock.parse_time(self.timed_light_config.off_time)
+        current_datetime = self.tools.clock.current_datetime()
 
-        if previous_time < off_time <= current_time:
+        if current_datetime.minute == 0:
+            pass
+
+        previous_time = current_datetime + timedelta(minutes=-1)
+        off_datetime = self.tools.clock.parse_datetime(self.timed_light_config.off_time)
+
+        if previous_time < off_datetime <= current_datetime:
             await self.on_off()
