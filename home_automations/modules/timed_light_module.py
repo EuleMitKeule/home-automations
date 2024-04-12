@@ -103,12 +103,12 @@ class TimedLightModule(BaseModule, ClockEvents):
             return
 
         current_datetime = self.tools.clock.current_datetime()
+        current_time = current_datetime.time()
 
-        if current_datetime.minute == 0:
-            pass
+        previous_datetime = current_datetime + timedelta(minutes=-1)
+        previous_time = previous_datetime.time()
 
-        previous_time = current_datetime + timedelta(minutes=-1)
-        off_datetime = self.tools.clock.parse_datetime(self.timed_light_config.off_time)
+        off_time = self.tools.clock.parse_time(self.timed_light_config.off_time)
 
-        if previous_time < off_datetime <= current_datetime:
+        if previous_time < off_time <= current_time:
             await self.on_off()
