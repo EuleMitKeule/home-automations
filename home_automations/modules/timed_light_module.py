@@ -48,6 +48,15 @@ class TimedLightModule(BaseModule, ClockEvents):
                 },
             )
 
+        for light_entity in self.timed_light_config.light_on_entities:
+            await self.tools.client.call_service(
+                "light",
+                "turn_on",
+                target={
+                    "entity_id": light_entity,
+                },
+            )
+
     async def on_on(self):
         if not await self.is_switch_on():
             return
