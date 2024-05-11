@@ -21,6 +21,7 @@ from home_automations.models.exceptions import NotFoundAgainError, ServiceTimeou
 from home_automations.modules.base_module import BaseModule
 from home_automations.modules.dimmer_module import DimmerModule
 from home_automations.modules.dummy_module import DummyModule
+from home_automations.modules.light_replacement_module import LightReplacementModule
 from home_automations.modules.motion_light_module import MotionLightModule
 from home_automations.modules.sensor_notify_module import SensorNotifyModule
 from home_automations.modules.thermostat_module import ThermostatModule
@@ -86,6 +87,12 @@ class HomeAutomations:
             + [
                 SensorNotifyModule(self.config, self.tools, sensor_notify_config)
                 for sensor_notify_config in self.config.sensor_notify_configs
+            ]
+            + [
+                LightReplacementModule(
+                    self.config, self.tools, light_replacement_config
+                )
+                for light_replacement_config in self.config.light_replacement_configs
             ]
         )
 

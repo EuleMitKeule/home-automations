@@ -10,6 +10,7 @@ from home_automations.models.api_config import ApiConfig
 from home_automations.models.climate_config import ClimateConfig
 from home_automations.models.dimmer_config import DimmerConfig
 from home_automations.models.homeassistant_config import HomeAssistantConfig
+from home_automations.models.light_replacement_config import LightReplacementConfig
 from home_automations.models.logging_config import LoggingConfig
 from home_automations.models.motion_light_config import MotionLightConfig
 from home_automations.models.sensor_notify_config import SensorNotifyConfig
@@ -34,6 +35,9 @@ class Config:
     timed_light_configs: list[TimedLightConfig] = field(default_factory=list)
     motion_light_configs: list[MotionLightConfig] = field(default_factory=list)
     sensor_notify_configs: list[SensorNotifyConfig] = field(default_factory=list)
+    light_replacement_configs: list[LightReplacementConfig] = field(
+        default_factory=list
+    )
 
     @classmethod
     def load(cls, file_path: Path) -> Optional["Config"]:
