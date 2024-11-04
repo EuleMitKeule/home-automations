@@ -91,7 +91,10 @@ class TimeDayState(DayState):
     async def is_fulfilled(self) -> bool | None:
         now = self._clock.current_time()
 
-        return self._from_time <= now <= self._to_time
+        if self._from_time <= self._to_time:
+            return self._from_time <= now <= self._to_time
+        else:
+            return now >= self._from_time or now <= self._to_time
 
     @property
     def sort_key(self) -> float:
